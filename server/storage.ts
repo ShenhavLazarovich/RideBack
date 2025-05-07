@@ -25,7 +25,8 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(data: InsertUser): Promise<User>;
+  getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined>;
+  createUser(data: InsertUser & { firebase_uid?: string, profilePicture?: string | null }): Promise<User>;
   updateUserPassword(userId: number, newPassword: string): Promise<void>;
   getUserProfile(userId: number): Promise<any>;
   updateUserProfile(userId: number, data: UpdateProfile): Promise<any>;
@@ -52,11 +53,11 @@ export interface IStorage {
   searchBikes(condition: SQL | undefined, limit: number, offset: number): Promise<BikeSearch[]>;
   countSearchResults(condition: SQL | undefined): Promise<number>;
 
-  sessionStore: session.SessionStore;
+  sessionStore: any;
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: any;
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({ 
@@ -85,7 +86,13 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async createUser(data: InsertUser): Promise<User> {
+  async getUserByFirebaseUid(firebaseUid: string): Promise<User | undefined> {
+    return await db.query.users.findFirst({
+      where: eq(users.firebase_uid, firebaseUid)
+    });
+  }
+
+  async createUser(data: InsertUser & { firebase_uid?: string, profilePicture?: string | null }): Promise<User> {
     const [user] = await db.insert(users).values(data).returning();
     return user;
   }
@@ -253,7 +260,13 @@ export class DatabaseStorage implements IStorage {
       query.where(condition);
     }
     
-    return await query;
+    const results = await query;
+    
+    // Convert Date objects to strings to match the BikeSearch type
+    return results.map(result => ({
+      ...result,
+      reportDate: result.reportDate ? result.reportDate.toISOString() : null
+    }));
   }
 
   async countSearchResults(condition: SQL | undefined): Promise<number> {

@@ -137,7 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Theft report routes
   app.get("/api/reports", ensureAuthenticated, async (req, res, next) => {
     try {
-      const reports = await storage.getUserReports(req.user.id);
+      const reports = await storage.getUserReports(req.user!.id);
       res.json(reports);
     } catch (error) {
       next(error);
@@ -149,7 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertReportSchema.parse(req.body);
       
       // Verify the bike belongs to the user
-      const bike = await storage.getBike(validatedData.bikeId, req.user.id);
+      const bike = await storage.getBike(validatedData.bikeId, req.user!.id);
       if (!bike) {
         return res.status(404).json({ message: "האופניים לא נמצאו" });
       }
@@ -157,7 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create the report and update bike status
       const newReport = await storage.createTheftReport({
         ...validatedData,
-        userId: req.user.id,
+        userId: req.user!.id,
         status: "active"
       });
       

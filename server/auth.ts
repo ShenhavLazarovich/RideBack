@@ -9,27 +9,31 @@ import { User as SelectUser } from "@shared/schema";
 import * as admin from "firebase-admin";
 
 // Initialize Firebase Admin SDK if credentials are available
-const firebaseAdminInitialized = (() => {
-  try {
-    if (!process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY || !process.env.VITE_FIREBASE_PROJECT_ID) {
-      console.warn("Firebase Admin SDK initialization skipped: Missing credentials");
-      return false;
+let firebaseAdminInitialized = false;
+
+try {
+  if (!process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY || !process.env.VITE_FIREBASE_PROJECT_ID) {
+    console.warn("Firebase Admin SDK initialization skipped: Missing credentials");
+  } else {
+    // Only initialize if not already initialized
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+        })
+      });
+      console.log("Firebase Admin SDK initialized successfully");
+      firebaseAdminInitialized = true;
+    } else {
+      console.log("Firebase Admin SDK already initialized");
+      firebaseAdminInitialized = true;
     }
-    
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-      })
-    });
-    console.log("Firebase Admin SDK initialized successfully");
-    return true;
-  } catch (error) {
-    console.error("Firebase Admin SDK initialization error:", error);
-    return false;
   }
-})();
+} catch (error) {
+  console.error("Firebase Admin SDK initialization error:", error);
+}
 
 declare global {
   namespace Express {
@@ -192,12 +196,15 @@ export function setupAuth(app: Express) {
         const randomPassword = randomBytes(16).toString('hex');
         const hashedPassword = await hashPassword(randomPassword);
         
+        // Use firstName for displayName if available
+        const firstName = name || username;
+        
         user = await storage.createUser({
           username,
           password: hashedPassword,
           firebase_uid: uid,
           email: email || null,
-          displayName: name || username,
+          firstName,
           profilePicture: picture || null
         });
       }
