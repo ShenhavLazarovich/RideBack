@@ -16,6 +16,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { signInWithGoogle } from "@/lib/firebase";
+import { FcGoogle } from "react-icons/fc";
 
 // Login form schema
 const loginSchema = z.object({
@@ -37,6 +40,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
+  const [isGoogleLoading, setIsGoogleLoading] = useState<boolean>(false);
   const { user, loginMutation, registerMutation } = useAuth();
   const [, navigate] = useLocation();
 
@@ -46,6 +50,23 @@ export default function AuthPage() {
       navigate("/");
     }
   }, [user, navigate]);
+  
+  // Handle Google Sign-in
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsGoogleLoading(true);
+      const result = await signInWithGoogle();
+      if (result && result.user) {
+        // TODO: Send the Firebase token to your server to validate
+        // and create a session for the user
+        console.log("Google sign-in successful", result.user);
+      }
+    } catch (error) {
+      console.error("Error with Google sign-in:", error);
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
 
   // Login form setup
   const loginForm = useForm<LoginFormValues>({
@@ -183,6 +204,32 @@ export default function AuthPage() {
                     </Button>
                   </form>
                 </Form>
+                
+                <div className="my-4 flex items-center">
+                  <Separator className="flex-1" />
+                  <span className="mx-2 text-sm text-muted-foreground">או</span>
+                  <Separator className="flex-1" />
+                </div>
+                
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={handleGoogleSignIn}
+                  disabled={isGoogleLoading}
+                >
+                  {isGoogleLoading ? (
+                    <>
+                      <span className="animate-spin mr-2">◌</span>
+                      <span>מתחבר...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FcGoogle className="w-5 h-5" />
+                      <span>התחבר עם Google</span>
+                    </>
+                  )}
+                </Button>
               </TabsContent>
               
               <TabsContent value="register">
@@ -239,6 +286,32 @@ export default function AuthPage() {
                     </Button>
                   </form>
                 </Form>
+                
+                <div className="my-4 flex items-center">
+                  <Separator className="flex-1" />
+                  <span className="mx-2 text-sm text-muted-foreground">או</span>
+                  <Separator className="flex-1" />
+                </div>
+                
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={handleGoogleSignIn}
+                  disabled={isGoogleLoading}
+                >
+                  {isGoogleLoading ? (
+                    <>
+                      <span className="animate-spin mr-2">◌</span>
+                      <span>מתחבר...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FcGoogle className="w-5 h-5" />
+                      <span>הירשם עם Google</span>
+                    </>
+                  )}
+                </Button>
               </TabsContent>
             </Tabs>
           </CardContent>
