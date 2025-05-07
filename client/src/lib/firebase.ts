@@ -36,12 +36,9 @@ auth.languageCode = 'he';
 // Functions for Google authentication
 export const signInWithGoogle = async (): Promise<UserCredential> => {
   try {
-    // Use popup for desktop and redirect for mobile
-    if (window.innerWidth > 768) {
-      return await signInWithPopup(auth, googleProvider);
-    } else {
-      return await signInWithRedirect(auth, googleProvider);
-    }
+    // Always use popup for now to simplify debugging
+    console.log("Starting Google sign in with popup...");
+    return await signInWithPopup(auth, googleProvider);
   } catch (error) {
     console.error("Error signing in with Google:", error);
     throw error;

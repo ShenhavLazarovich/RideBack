@@ -60,12 +60,24 @@ export default function AuthPage() {
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
+      console.log("Starting Google sign-in process");
+      
       const result = await signInWithGoogle();
+      console.log("Google sign-in successful, got user:", result?.user?.email);
+      
       if (result && result.user) {
+        console.log("Authenticating with server...");
         // Authenticate with our server using the Firebase token
         await authenticateWithServer(result.user);
+        
+        console.log("Authentication with server successful, refreshing user data");
         // Refresh the user data
-        queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        
+        // Force a page reload to ensure state is fresh
+        console.log("Reloading page to ensure fresh state");
+        window.location.href = '/';
+        
         toast({
           title: "התחברות הצליחה",
           description: "ברוך הבא ל-RideBack!",
@@ -118,13 +130,29 @@ export default function AuthPage() {
   });
 
   const onLoginSubmit = (data: LoginFormValues) => {
-    loginMutation.mutate(data);
+    loginMutation.mutate(data, {
+      onSuccess: () => {
+        // Force a page reload after successful login to ensure fresh state
+        console.log("Login successful, redirecting to dashboard");
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 500);
+      }
+    });
   };
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
     // Omit confirmPassword as it's not needed for the API call
     const { confirmPassword, ...registerData } = data;
-    registerMutation.mutate(registerData);
+    registerMutation.mutate(registerData, {
+      onSuccess: () => {
+        // Force a page reload after successful registration to ensure fresh state
+        console.log("Registration successful, redirecting to dashboard");
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 500);
+      }
+    });
   };
 
   return (
