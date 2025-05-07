@@ -57,14 +57,15 @@ async function comparePasswords(supplied: string, stored: string) {
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "ride-back-session-secret",
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
     store: storage.sessionStore,
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
       secure: false, // Set to false for development, true for production
-      sameSite: 'lax'
+      sameSite: 'lax',
+      path: '/'
     }
   };
 
@@ -121,6 +122,7 @@ export function setupAuth(app: Express) {
 
   app.post("/api/login", (req, res, next) => {
     console.log("Login attempt for username:", req.body.username);
+    console.log("Session ID before auth:", req.sessionID);
     
     passport.authenticate("local", (err: any, user: User | false, info: any) => {
       if (err) {
@@ -140,7 +142,20 @@ export function setupAuth(app: Express) {
         }
         
         console.log("Login successful for user:", user.username);
-        return res.status(200).json(user);
+        console.log("Session ID after login:", req.sessionID);
+        console.log("Is authenticated:", req.isAuthenticated());
+        console.log("Session data:", req.session);
+        
+        // Force session save
+        req.session.save((err) => {
+          if (err) {
+            console.error("Session save error:", err);
+            return next(err);
+          }
+          
+          console.log("Session saved successfully");
+          return res.status(200).json(user);
+        });
       });
     })(req, res, next);
   });
@@ -153,8 +168,14 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+    console.log("GET /api/user - Session ID:", req.sessionID);
+    console.log("GET /api/user - isAuthenticated:", req.isAuthenticated());
+    if (req.isAuthenticated()) {
+      console.log("GET /api/user - User:", req.user);
+      return res.json(req.user);
+    } else {
+      return res.sendStatus(401);
+    }
   });
 
   app.post("/api/change-password", async (req, res, next) => {
@@ -242,7 +263,20 @@ export function setupAuth(app: Express) {
         }
         
         console.log(`Firebase user logged in successfully: ${user.username}`);
-        return res.status(200).json(user);
+        console.log("Firebase auth - Session ID after login:", req.sessionID);
+        console.log("Firebase auth - Is authenticated:", req.isAuthenticated());
+        console.log("Firebase auth - Session data:", req.session);
+        
+        // Force session save
+        req.session.save((err) => {
+          if (err) {
+            console.error("Session save error:", err);
+            return next(err);
+          }
+          
+          console.log("Firebase auth - Session saved successfully");
+          return res.status(200).json(user);
+        });
       });
     } catch (error: any) {
       console.error("Firebase authentication error:", error);
