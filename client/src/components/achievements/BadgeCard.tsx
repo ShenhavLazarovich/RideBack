@@ -19,6 +19,37 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({
   showDetails = false,
   onClick 
 }) => {
+  // Function to render requirements safely
+  const renderRequirements = (requirementsObj: unknown): React.ReactNode => {
+    if (!requirementsObj || typeof requirementsObj !== 'object') {
+      return <li className="text-muted-foreground">אין דרישות מוגדרות</li>;
+    }
+    
+    // Safely convert the requirements object
+    const reqObj = JSON.parse(JSON.stringify(requirementsObj));
+    
+    return Object.entries(reqObj).map(([key, value]) => {
+      let displayValue: string;
+      
+      if (typeof value === 'string') {
+        displayValue = value;
+      } else if (typeof value === 'number') {
+        displayValue = value.toString();
+      } else if (value === null) {
+        displayValue = 'לא מוגדר';
+      } else if (typeof value === 'boolean') {
+        displayValue = value ? 'כן' : 'לא';
+      } else {
+        displayValue = 'מידע מורכב';
+      }
+      
+      return (
+        <li key={key} className="text-muted-foreground">
+          {key}: {displayValue}
+        </li>
+      );
+    });
+  };
   // Get level text and color based on badge level
   const getLevelInfo = (level: number) => {
     switch (level) {
@@ -102,23 +133,9 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({
           <div className="w-full text-sm">
             <p className="font-semibold mb-1">דרישות:</p>
             <ul className="list-disc list-inside">
-              {badge.requirements && typeof badge.requirements === 'object' && (
-                // Convert requirements object to array of entries and render them
-                Object.entries(badge.requirements as Record<string, unknown>).map(([key, value]) => (
-                  <li key={key} className="text-muted-foreground">
-                    {key}: {typeof value === 'string' 
-                      ? value 
-                      : typeof value === 'number'
-                        ? value.toString()
-                        : value === null
-                          ? 'null'
-                          : typeof value === 'boolean'
-                            ? value ? 'כן' : 'לא'
-                            : 'מידע מורכב'
-                    }
-                  </li>
-                ))
-              )}
+              {badge.requirements && typeof badge.requirements === 'object' && 
+                renderRequirements(badge.requirements)
+              }
             </ul>
           </div>
         </CardFooter>
