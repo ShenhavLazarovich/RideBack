@@ -72,9 +72,22 @@ export default function AuthPage() {
       }
     } catch (error: any) {
       console.error("Error with Google sign-in:", error);
+      let errorMessage = "אירעה שגיאה בהתחברות. אנא נסה שנית.";
+      
+      // Handle specific Firebase error codes
+      if (error.code === "auth/configuration-not-found") {
+        errorMessage = "שגיאת התחברות: Google Authentication לא מוגדר כראוי. צריך להגדיר את ספק האימות בקונסולת Firebase.";
+      } else if (error.code === "auth/popup-blocked") {
+        errorMessage = "חלון ההתחברות נחסם. אנא אפשר חלונות קופצים ונסה שוב.";
+      } else if (error.code === "auth/popup-closed-by-user") {
+        errorMessage = "חלון ההתחברות נסגר לפני השלמת התהליך. אנא נסה שוב.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "שגיאת התחברות",
-        description: error.message || "אירעה שגיאה בהתחברות. אנא נסה שנית.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

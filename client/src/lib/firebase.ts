@@ -10,6 +10,12 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+// Log Firebase configuration for debugging (don't log API keys in production)
+console.log("Firebase config (without API key):", {
+  ...firebaseConfig,
+  apiKey: "HIDDEN_FOR_SECURITY"
+});
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -18,6 +24,11 @@ const googleProvider = new GoogleAuthProvider();
 // Add scopes if needed
 googleProvider.addScope('https://www.googleapis.com/auth/userinfo.email');
 googleProvider.addScope('https://www.googleapis.com/auth/userinfo.profile');
+
+// Set custom parameters for better compatibility
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
 
 // Set language to Hebrew
 auth.languageCode = 'he';

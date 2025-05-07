@@ -41,9 +41,20 @@ function FirebaseAuthHandler() {
       } catch (error: any) {
         console.error("Error handling redirect:", error);
         if (error.message !== "No redirect result") {
+          let errorMessage = "אירעה שגיאה בהתחברות. אנא נסה שנית.";
+          
+          // Handle specific Firebase error codes
+          if (error.code === "auth/configuration-not-found") {
+            errorMessage = "שגיאת התחברות: Google Authentication לא מוגדר כראוי בפרויקט Firebase.";
+          } else if (error.code) {
+            errorMessage = `שגיאת Firebase: ${error.code}`;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+          
           toast({
             title: "שגיאת התחברות",
-            description: error.message || "אירעה שגיאה בהתחברות. אנא נסה שנית.",
+            description: errorMessage,
             variant: "destructive",
           });
         }
