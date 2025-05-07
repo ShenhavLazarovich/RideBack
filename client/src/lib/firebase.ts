@@ -39,7 +39,14 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
 
 export const handleRedirectResult = async (): Promise<UserCredential | null> => {
   try {
-    return await getRedirectResult(auth);
+    const result = await getRedirectResult(auth);
+    
+    // getRedirectResult() returns null if there is no redirect result
+    if (!result) {
+      return null;
+    }
+    
+    return result;
   } catch (error) {
     console.error("Error handling redirect result:", error);
     throw error;
