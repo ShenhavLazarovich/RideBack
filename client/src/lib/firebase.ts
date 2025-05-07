@@ -67,18 +67,26 @@ export const handleRedirectResult = async (): Promise<UserCredential | null> => 
 // Authenticate with our server using Firebase token
 export const authenticateWithServer = async (user: User) => {
   try {
+    console.log("Authenticating Firebase user with server:", user.email);
+    
     // Get the Firebase ID token
     const idToken = await user.getIdToken();
+    console.log("Got Firebase ID token, length:", idToken.length);
     
     // Send the token to our server
+    console.log("Sending token to /api/auth/firebase endpoint...");
     const response = await apiRequest("POST", "/api/auth/firebase", { idToken });
     
     if (!response.ok) {
+      console.error("Server authentication failed with status:", response.status);
       const errorData = await response.json();
       throw new Error(errorData.message || "Server authentication failed");
     }
     
-    return await response.json();
+    console.log("Server authentication successful");
+    const userData = await response.json();
+    console.log("User data from server:", userData);
+    return userData;
   } catch (error) {
     console.error("Server authentication error:", error);
     throw error;

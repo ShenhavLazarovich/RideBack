@@ -63,7 +63,8 @@ export function setupAuth(app: Express) {
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Set to false for development, true for production
+      sameSite: 'lax'
     }
   };
 
@@ -119,13 +120,26 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
+    console.log("Login attempt for username:", req.body.username);
+    
     passport.authenticate("local", (err: any, user: User | false, info: any) => {
-      if (err) return next(err);
+      if (err) {
+        console.error("Login error:", err);
+        return next(err);
+      }
+      
       if (!user) {
+        console.log("Authentication failed: Invalid credentials");
         return res.status(401).json({ message: "שם משתמש או סיסמה לא נכונים" });
       }
+      
       req.login(user, (err: any) => {
-        if (err) return next(err);
+        if (err) {
+          console.error("Session creation error:", err);
+          return next(err);
+        }
+        
+        console.log("Login successful for user:", user.username);
         return res.status(200).json(user);
       });
     })(req, res, next);
@@ -170,23 +184,32 @@ export function setupAuth(app: Express) {
   // Handle Firebase authentication
   app.post("/api/auth/firebase", async (req, res, next) => {
     try {
+      console.log("Firebase authentication attempt");
+      
       if (!firebaseAdminInitialized) {
+        console.error("Firebase Admin SDK not initialized");
         return res.status(500).json({ message: "Firebase authentication is not configured on the server" });
       }
 
       const { idToken } = req.body;
       if (!idToken) {
+        console.warn("Missing ID token in request");
         return res.status(400).json({ message: "Missing ID token" });
       }
 
+      console.log("Verifying Firebase ID token...");
+      
       // Verify Firebase ID token
       const decodedToken = await admin.auth().verifyIdToken(idToken);
       const { uid, email, name, picture } = decodedToken;
+      
+      console.log(`Token verified for Firebase UID: ${uid}, email: ${email || 'not provided'}`);
 
       // Check if user exists by firebase_uid
       let user = await storage.getUserByFirebaseUid(uid);
 
       if (!user) {
+        console.log(`Creating new user for Firebase UID: ${uid}`);
         // Create new user with Firebase info
         const username = email ? email.split('@')[0] : `user_${uid.substring(0, 8)}`;
         
@@ -205,11 +228,20 @@ export function setupAuth(app: Express) {
           firstName,
           profilePicture: picture || null
         });
+        
+        console.log(`New user created with ID: ${user.id}, username: ${user.username}`);
+      } else {
+        console.log(`Existing user found with ID: ${user.id}, username: ${user.username}`);
       }
 
       // Log user in
       req.login(user, (err: any) => {
-        if (err) return next(err);
+        if (err) {
+          console.error("Session creation error:", err);
+          return next(err);
+        }
+        
+        console.log(`Firebase user logged in successfully: ${user.username}`);
         return res.status(200).json(user);
       });
     } catch (error: any) {
