@@ -77,6 +77,8 @@ export default function AuthPage() {
       // Handle specific Firebase error codes
       if (error.code === "auth/configuration-not-found") {
         errorMessage = "שגיאת התחברות: Google Authentication לא מוגדר כראוי. צריך להגדיר את ספק האימות בקונסולת Firebase.";
+      } else if (error.code === "auth/unauthorized-domain") {
+        errorMessage = "הדומיין שלך לא מורשה בהגדרות Firebase. יש להוסיף את הדומיין של האפליקציה לרשימת הדומיינים המורשים בהגדרות Authentication בקונסולת Firebase.";
       } else if (error.code === "auth/popup-blocked") {
         errorMessage = "חלון ההתחברות נחסם. אנא אפשר חלונות קופצים ונסה שוב.";
       } else if (error.code === "auth/popup-closed-by-user") {

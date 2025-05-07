@@ -2,6 +2,7 @@ import { db } from "./index";
 import * as schema from "@shared/schema";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
+import { eq, ne } from "drizzle-orm";
 
 const scryptAsync = promisify(scrypt);
 
@@ -17,7 +18,7 @@ async function seed() {
     
     // Create a demo user
     const existingUser = await db.query.users.findFirst({
-      where: schema.users.username.equals("demo")
+      where: (users) => eq(users.username, "demo")
     });
     
     let user;
@@ -38,7 +39,7 @@ async function seed() {
     
     // Create some bikes for the demo user
     const existingBikes = await db.query.bikes.findMany({
-      where: schema.bikes.userId.equals(user.id)
+      where: (bikes) => eq(bikes.userId, user.id)
     });
     
     if (existingBikes.length === 0) {
@@ -92,7 +93,7 @@ async function seed() {
     
     // Create some sample alerts if none exist
     const existingAlerts = await db.query.alerts.findMany({
-      where: schema.alerts.userId.equals(user.id)
+      where: (alerts) => eq(alerts.userId, user.id)
     });
     
     if (existingAlerts.length === 0) {
@@ -137,7 +138,7 @@ async function seed() {
     
     // Add some sample search results
     const publicBikes = await db.query.bikes.findMany({
-      where: schema.bikes.userId.notEquals(user.id)
+      where: (bikes) => ne(bikes.userId, user.id)
     });
     
     if (publicBikes.length < 5) {
@@ -146,7 +147,7 @@ async function seed() {
       // Sample user for these bikes
       let searchUser;
       const existingSearchUser = await db.query.users.findFirst({
-        where: schema.users.username.equals("search_data")
+        where: (users) => eq(users.username, "search_data")
       });
       
       if (!existingSearchUser) {
