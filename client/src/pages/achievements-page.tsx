@@ -8,10 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
 import { useLocation } from "wouter";
+import { MobileMenu } from "@/components/layout/MobileMenu";
 
 export default function AchievementsPage() {
   const { user, isLoading } = useAuth();
-  const { isMobile, toggleMobileMenu, mobileMenuOpen } = useMobile();
+  const mobileState = useMobile();
+  const { isMobile, toggleMobileMenu, mobileMenuOpen } = mobileState;
   const [location] = useLocation();
 
   if (isLoading) {
@@ -25,6 +27,7 @@ export default function AchievementsPage() {
   return (
     <div className="flex h-screen">
       {!isMobile && <DesktopSidebar activeRoute="/achievements" />}
+      {isMobile && <MobileMenu isOpen={mobileMenuOpen} activeRoute="/achievements" onClose={toggleMobileMenu} />}
 
       <main className="flex-1 overflow-y-auto bg-background">
         {isMobile && (

@@ -298,6 +298,29 @@ export class DatabaseStorage implements IStorage {
     const result = await query;
     return result.length;
   }
+
+  // Badge and achievement operations
+  async getAllBadges(): Promise<Badge[]> {
+    return await db.query.badges.findMany({
+      orderBy: [desc(badges.level), desc(badges.category)]
+    });
+  }
+
+  async getBadge(badgeId: number): Promise<Badge | undefined> {
+    return await db.query.badges.findFirst({
+      where: eq(badges.id, badgeId)
+    });
+  }
+
+  async getUserAchievements(userId: number): Promise<UserAchievement[]> {
+    return await db.query.userAchievements.findMany({
+      where: eq(userAchievements.userId, userId),
+      with: {
+        badge: true
+      },
+      orderBy: desc(userAchievements.completedAt)
+    });
+  }
 }
 
 export const storage = new DatabaseStorage();

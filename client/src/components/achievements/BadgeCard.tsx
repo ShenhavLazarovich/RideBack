@@ -1,7 +1,10 @@
-import React from "react";
+import React, { ReactNode } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge as BadgeType } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
+
+// Helper type for the requirements object
+type RequirementValue = string | number | boolean | null | Record<string, unknown>;
 
 interface BadgeCardProps {
   badge: BadgeType;
@@ -99,13 +102,23 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({
           <div className="w-full text-sm">
             <p className="font-semibold mb-1">דרישות:</p>
             <ul className="list-disc list-inside">
-              {badge.requirements && typeof badge.requirements === 'object' &&
-                Object.entries(JSON.parse(JSON.stringify(badge.requirements))).map(([key, value]) => (
+              {badge.requirements && typeof badge.requirements === 'object' && (
+                // Convert requirements object to array of entries and render them
+                Object.entries(badge.requirements as Record<string, unknown>).map(([key, value]) => (
                   <li key={key} className="text-muted-foreground">
-                    {key}: {typeof value === 'string' ? value : JSON.stringify(value)}
+                    {key}: {typeof value === 'string' 
+                      ? value 
+                      : typeof value === 'number'
+                        ? value.toString()
+                        : value === null
+                          ? 'null'
+                          : typeof value === 'boolean'
+                            ? value ? 'כן' : 'לא'
+                            : 'מידע מורכב'
+                    }
                   </li>
                 ))
-              }
+              )}
             </ul>
           </div>
         </CardFooter>
