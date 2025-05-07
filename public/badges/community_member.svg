@@ -1,8 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="60" cy="60" r="57" fill="#e8f7ed" stroke="#22c55e" stroke-width="3"/>
-  <path d="M40 50C46.0751 50 51 45.0751 51 39C51 32.9249 46.0751 28 40 28C33.9249 28 29 32.9249 29 39C29 45.0751 33.9249 50 40 50Z" fill="#22c55e"/>
-  <path d="M80 50C86.0751 50 91 45.0751 91 39C91 32.9249 86.0751 28 80 28C73.9249 28 69 32.9249 69 39C69 45.0751 73.9249 50 80 50Z" fill="#22c55e"/>
-  <path d="M60 62C66.0751 62 71 57.0751 71 51C71 44.9249 66.0751 40 60 40C53.9249 40 49 44.9249 49 51C49 57.0751 53.9249 62 60 62Z" fill="#15803d"/>
-  <path d="M27 91.9999C27 77.4999 32.5 64 40 64C41.7259 64 43.3892 64.5575 45 65.5989C46.6108 66.6403 48.2741 68.0001 50 68.0001C51.7259 68.0001 53.3892 66.6403 55 65.5989C56.6108 64.5575 58.2741 64 60 64C61.7259 64 63.3892 64.5575 65 65.5989C66.6108 66.6403 68.2741 68.0001 70 68.0001C71.7259 68.0001 73.3892 66.6403 75 65.5989C76.6108 64.5575 78.2741 64 80 64C87.5 64 93 77.4999 93 91.9999H27Z" fill="#15803d"/>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Community Member Badge</title>
+    <defs>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="gradient">
+            <stop stop-color="#10B981" offset="0%"></stop>
+            <stop stop-color="#059669" offset="100%"></stop>
+        </linearGradient>
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="3"></feGaussianBlur>
+            <feOffset dx="0" dy="4"></feOffset>
+            <feComponentTransfer>
+                <feFuncA type="linear" slope="0.2"></feFuncA>
+            </feComponentTransfer>
+            <feMerge>
+                <feMergeNode></feMergeNode>
+                <feMergeNode in="SourceGraphic"></feMergeNode>
+            </feMerge>
+        </filter>
+    </defs>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <circle fill="#F3F4F6" cx="100" cy="100" r="100"></circle>
+        <circle fill="url(#gradient)" filter="url(#shadow)" cx="100" cy="100" r="80"></circle>
+        <circle cx="100" cy="75" r="25" fill="#FFFFFF"></circle>
+        <path d="M60,125 C60,105 80,90 100,90 C120,90 140,105 140,125 C140,145 130,145 100,145 C70,145 60,145 60,125 Z" fill="#FFFFFF"></path>
+    </g>
 </svg>

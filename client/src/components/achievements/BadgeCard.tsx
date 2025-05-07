@@ -3,8 +3,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge as BadgeType } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 
-// Helper type for the requirements object
-type RequirementValue = string | number | boolean | null | Record<string, unknown>;
+// Define a type for what requirements might look like after parsing
+interface ParsedRequirements {
+  [key: string]: string | number | boolean | null | undefined | object;
+}
 
 interface BadgeCardProps {
   badge: BadgeType;
