@@ -99,8 +99,8 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({
           <div className="w-full text-sm">
             <p className="font-semibold mb-1">דרישות:</p>
             <ul className="list-disc list-inside">
-              {badge.requirements && typeof badge.requirements === 'object' && 
-                Object.entries(badge.requirements as Record<string, any>).map(([key, value]) => (
+              {badge.requirements && typeof badge.requirements === 'object' &&
+                Object.entries(JSON.parse(JSON.stringify(badge.requirements))).map(([key, value]) => (
                   <li key={key} className="text-muted-foreground">
                     {key}: {typeof value === 'string' ? value : JSON.stringify(value)}
                   </li>

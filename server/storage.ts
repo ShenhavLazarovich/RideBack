@@ -7,11 +7,15 @@ import {
   bikes,
   bikeReports,
   alerts,
+  badges,
+  userAchievements,
   User,
   Bike,
   BikeReport, 
   Alert,
   BikeSearch,
+  Badge,
+  UserAchievement,
   InsertUser,
   InsertBike,
   InsertBikeReport,
@@ -52,6 +56,11 @@ export interface IStorage {
   // Search operations
   searchBikes(condition: SQL | undefined, limit: number, offset: number): Promise<BikeSearch[]>;
   countSearchResults(condition: SQL | undefined): Promise<number>;
+
+  // Badge and achievement operations
+  getAllBadges(): Promise<Badge[]>;
+  getBadge(badgeId: number): Promise<Badge | undefined>;
+  getUserAchievements(userId: number): Promise<UserAchievement[]>;
 
   sessionStore: any;
 }
