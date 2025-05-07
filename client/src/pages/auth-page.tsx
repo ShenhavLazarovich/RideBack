@@ -130,13 +130,21 @@ export default function AuthPage() {
   });
 
   const onLoginSubmit = (data: LoginFormValues) => {
+    console.log("Login form submitted for user:", data.username);
+    
     loginMutation.mutate(data, {
-      onSuccess: () => {
+      onSuccess: (userData) => {
         // Force a page reload after successful login to ensure fresh state
-        console.log("Login successful, redirecting to dashboard");
+        console.log("Login successful for user:", userData.username);
+        console.log("Redirecting to dashboard after login...");
+        
+        // Add a short delay to ensure session is saved before redirect
         setTimeout(() => {
           window.location.href = '/';
         }, 500);
+      },
+      onError: (error) => {
+        console.error("Login submission error:", error.message);
       }
     });
   };
@@ -144,13 +152,21 @@ export default function AuthPage() {
   const onRegisterSubmit = (data: RegisterFormValues) => {
     // Omit confirmPassword as it's not needed for the API call
     const { confirmPassword, ...registerData } = data;
+    console.log("Registration form submitted for user:", registerData.username);
+    
     registerMutation.mutate(registerData, {
-      onSuccess: () => {
+      onSuccess: (userData) => {
         // Force a page reload after successful registration to ensure fresh state
-        console.log("Registration successful, redirecting to dashboard");
+        console.log("Registration successful for user:", userData.username);
+        console.log("Redirecting to dashboard after registration...");
+        
+        // Add a short delay to ensure session is saved before redirect
         setTimeout(() => {
           window.location.href = '/';
         }, 500);
+      },
+      onError: (error) => {
+        console.error("Registration submission error:", error.message);
       }
     });
   };

@@ -55,15 +55,20 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Generate a random session secret if one isn't provided
+  const sessionSecret = process.env.SESSION_SECRET || randomBytes(32).toString('hex');
+  console.log("Using session secret:", sessionSecret.substring(0, 5) + "..." + sessionSecret.substring(sessionSecret.length - 5));
+  
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "ride-back-session-secret",
-    resave: true,
-    saveUninitialized: true,
+    secret: sessionSecret,
+    name: 'rideback.sid', // Custom cookie name
+    resave: false,
+    saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
-      secure: false, // Set to false for development, true for production
+      secure: false, // Set to true in production
       sameSite: 'lax',
       path: '/'
     }

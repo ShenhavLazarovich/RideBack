@@ -60,11 +60,19 @@ export class DatabaseStorage implements IStorage {
   sessionStore: any;
 
   constructor() {
+    const PostgresSessionStore = connectPg(session);
+    
     this.sessionStore = new PostgresSessionStore({ 
       pool, 
       createTableIfMissing: true,
-      tableName: 'sessions' 
+      tableName: 'sessions',
+      pruneSessionInterval: 60, // Minutes
+      errorLog: (error) => {
+        console.error("Session store error:", error);
+      }
     });
+    
+    console.log("PostgreSQL session store initialized");
   }
 
   // User operations
