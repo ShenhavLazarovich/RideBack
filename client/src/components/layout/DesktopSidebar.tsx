@@ -70,6 +70,12 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeRoute }) =
               label="פרופיל"
               isActive={activeRoute === "/profile"}
             />
+            <NavigationItem 
+              href="/achievements"
+              icon="fa-trophy"
+              label="הישגים"
+              isActive={activeRoute === "/achievements"}
+            />
           </ul>
         </nav>
       </div>

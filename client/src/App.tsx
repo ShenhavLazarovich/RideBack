@@ -11,6 +11,7 @@ import RegisterBikePage from "@/pages/register-bike-page";
 import ReportTheftPage from "@/pages/report-theft-page";
 import SearchPage from "@/pages/search-page";
 import ProfilePage from "@/pages/profile-page";
+import AchievementsPage from "@/pages/achievements-page";
 import { useEffect, useState } from "react";
 import { handleRedirectResult, authenticateWithServer } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -85,6 +86,7 @@ function Router() {
       <ProtectedRoute path="/report" component={ReportTheftPage} />
       <ProtectedRoute path="/search" component={SearchPage} />
       <ProtectedRoute path="/profile" component={ProfilePage} />
+      <ProtectedRoute path="/achievements" component={AchievementsPage} />
       <Route component={NotFound} />
     </Switch>
   );

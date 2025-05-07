@@ -101,6 +101,14 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, activeRoute, onC
                 isActive={activeRoute === "/profile"}
               />
             </li>
+            <li onClick={() => handleNavigation("/achievements")}>
+              <NavigationItem 
+                href="/achievements"
+                icon="fa-trophy"
+                label="הישגים"
+                isActive={activeRoute === "/achievements"}
+              />
+            </li>
           </ul>
         </nav>
         
