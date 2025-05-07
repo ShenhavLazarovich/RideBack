@@ -135,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Theft report routes
-  app.get("/api/reports", ensureAuthenticated, async (req, res, next) => {
+  app.get("/api/reports", ensureAuthenticated, async (req: any, res: any, next: any) => {
     try {
       const reports = await storage.getUserReports(req.user.id);
       res.json(reports);
@@ -144,7 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/reports", ensureAuthenticated, async (req, res, next) => {
+  app.post("/api/reports", ensureAuthenticated, async (req: any, res: any, next: any) => {
     try {
       const validatedData = insertReportSchema.parse(req.body);
       

@@ -117,6 +117,43 @@ export function setupAuth(app: Express) {
     res.json(req.user);
   });
 
+  // Google Authentication endpoint
+  app.post("/api/login/google", async (req, res, next) => {
+    try {
+      const { email, displayName, uid, photoURL } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "נדרש אימייל לצורך התחברות עם גוגל" });
+      }
+
+      // Check if user exists by email
+      let user = await storage.getUserByUsername(email);
+      
+      if (!user) {
+        // Create a new user with random password (they'll auth with Google)
+        const randomPass = randomBytes(16).toString("hex");
+        const firstName = displayName?.split(' ')[0] || '';
+        const lastName = displayName?.split(' ').slice(1).join(' ') || '';
+        
+        user = await storage.createUser({
+          username: email,
+          email,
+          firstName,
+          lastName,
+          password: await hashPassword(randomPass),
+        });
+      }
+
+      // Log the user in
+      req.login(user, (err) => {
+        if (err) return next(err);
+        res.status(200).json(user);
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.post("/api/change-password", async (req, res, next) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "עליך להתחבר כדי לשנות סיסמה" });
     
