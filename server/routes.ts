@@ -7,11 +7,29 @@ import { bikes, alerts, bikeReports, insertBikeSchema, insertReportSchema, updat
 import { eq, and, desc, like, or, gte, lte } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Debug middleware for cookies
+  app.use((req, res, next) => {
+    if (req.url.startsWith('/api/')) {
+      const cookies = req.headers.cookie;
+      console.log(`Request to ${req.url} - Cookie header: ${cookies || 'none'}`);
+    }
+    next();
+  });
+
   // Setup authentication routes
   setupAuth(app);
 
+  // Debug middleware to log auth state
+  app.use((req, res, next) => {
+    if (req.url.startsWith('/api/')) {
+      console.log(`Request to ${req.url} - Auth: ${req.isAuthenticated() ? 'yes' : 'no'}, Session ID: ${req.sessionID || 'none'}`);
+    }
+    next();
+  });
+
   // Middleware to ensure user is authenticated
   const ensureAuthenticated = (req: any, res: Response, next: NextFunction) => {
+    console.log(`ensureAuthenticated call for ${req.url} - Auth: ${req.isAuthenticated() ? 'yes' : 'no'}, Session ID: ${req.sessionID || 'none'}`);
     if (req.isAuthenticated()) {
       return next();
     }

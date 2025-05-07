@@ -62,14 +62,14 @@ export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: sessionSecret,
     name: 'rideback.sid', // Custom cookie name
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Changed to true to ensure session is always saved
+    saveUninitialized: true, // Changed to true to create session for all visitors
     store: storage.sessionStore,
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
-      secure: false, // Set to true in production
-      sameSite: 'lax',
+      secure: false, // Set to false for development; Set to true in production
+      sameSite: 'lax', // Using 'lax' which works best for most scenarios
       path: '/',
       domain: undefined // Let browser set this automatically
     }
