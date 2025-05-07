@@ -17,8 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { signInWithGoogle } from "@/lib/firebase";
+import { signInWithGoogle, authenticateWithServer } from "@/lib/firebase";
 import { FcGoogle } from "react-icons/fc";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 // Login form schema
 const loginSchema = z.object({
@@ -51,18 +53,30 @@ export default function AuthPage() {
     }
   }, [user, navigate]);
   
+  const { toast } = useToast();
+  
   // Handle Google Sign-in
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
       const result = await signInWithGoogle();
       if (result && result.user) {
-        // TODO: Send the Firebase token to your server to validate
-        // and create a session for the user
-        console.log("Google sign-in successful", result.user);
+        // Authenticate with our server using the Firebase token
+        await authenticateWithServer(result.user);
+        // Refresh the user data
+        queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        toast({
+          title: "התחברות הצליחה",
+          description: "ברוך הבא ל-RideBack!",
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error with Google sign-in:", error);
+      toast({
+        title: "שגיאת התחברות",
+        description: error.message || "אירעה שגיאה בהתחברות. אנא נסה שנית.",
+        variant: "destructive",
+      });
     } finally {
       setIsGoogleLoading(false);
     }

@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, User, UserCredential } from "firebase/auth";
+import { apiRequest } from "./queryClient";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -22,7 +23,7 @@ googleProvider.addScope('https://www.googleapis.com/auth/userinfo.profile');
 auth.languageCode = 'he';
 
 // Functions for Google authentication
-export const signInWithGoogle = async () => {
+export const signInWithGoogle = async (): Promise<UserCredential> => {
   try {
     // Use popup for desktop and redirect for mobile
     if (window.innerWidth > 768) {
@@ -36,11 +37,32 @@ export const signInWithGoogle = async () => {
   }
 };
 
-export const handleRedirectResult = async () => {
+export const handleRedirectResult = async (): Promise<UserCredential | null> => {
   try {
     return await getRedirectResult(auth);
   } catch (error) {
     console.error("Error handling redirect result:", error);
+    throw error;
+  }
+};
+
+// Authenticate with our server using Firebase token
+export const authenticateWithServer = async (user: User) => {
+  try {
+    // Get the Firebase ID token
+    const idToken = await user.getIdToken();
+    
+    // Send the token to our server
+    const response = await apiRequest("POST", "/api/auth/firebase", { idToken });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Server authentication failed");
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Server authentication error:", error);
     throw error;
   }
 };

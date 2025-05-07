@@ -175,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Alerts
   app.get("/api/alerts", ensureAuthenticated, async (req, res, next) => {
     try {
-      const alerts = await storage.getUserAlerts(req.user.id);
+      const alerts = await storage.getUserAlerts(req.user!.id);
       res.json(alerts);
     } catch (error) {
       next(error);
@@ -185,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/alerts/:id/read", ensureAuthenticated, async (req, res, next) => {
     try {
       const alertId = parseInt(req.params.id);
-      const alert = await storage.getAlert(alertId, req.user.id);
+      const alert = await storage.getAlert(alertId, req.user!.id);
       
       if (!alert) {
         return res.status(404).json({ message: "ההתראה לא נמצאה" });

@@ -5,8 +5,8 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser } from "@shared/schema";
-import * as admin from "firebase-admin";
+import { User, User as SelectUser } from "@shared/schema";
+import admin from "firebase-admin";
 
 // Initialize Firebase Admin SDK if credentials are available
 let firebaseAdminInitialized = false;
@@ -15,21 +15,19 @@ try {
   if (!process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY || !process.env.VITE_FIREBASE_PROJECT_ID) {
     console.warn("Firebase Admin SDK initialization skipped: Missing credentials");
   } else {
-    // Only initialize if not already initialized
-    if (!admin.apps.length) {
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-        })
-      });
-      console.log("Firebase Admin SDK initialized successfully");
-      firebaseAdminInitialized = true;
-    } else {
-      console.log("Firebase Admin SDK already initialized");
-      firebaseAdminInitialized = true;
-    }
+    const firebaseAdminConfig = {
+      projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      // Make sure to properly handle line breaks in the private key
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+    };
+    
+    // Initialize the Firebase Admin SDK
+    admin.initializeApp({
+      credential: admin.credential.cert(firebaseAdminConfig)
+    });
+    console.log("Firebase Admin SDK initialized successfully");
+    firebaseAdminInitialized = true;
   }
 } catch (error) {
   console.error("Firebase Admin SDK initialization error:", error);
@@ -121,12 +119,12 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: any, user: User | false, info: any) => {
       if (err) return next(err);
       if (!user) {
         return res.status(401).json({ message: "שם משתמש או סיסמה לא נכונים" });
       }
-      req.login(user, (err) => {
+      req.login(user, (err: any) => {
         if (err) return next(err);
         return res.status(200).json(user);
       });
@@ -134,7 +132,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/logout", (req, res, next) => {
-    req.logout((err) => {
+    req.logout((err: any) => {
       if (err) return next(err);
       res.sendStatus(200);
     });
@@ -210,7 +208,7 @@ export function setupAuth(app: Express) {
       }
 
       // Log user in
-      req.login(user, (err) => {
+      req.login(user, (err: any) => {
         if (err) return next(err);
         return res.status(200).json(user);
       });
