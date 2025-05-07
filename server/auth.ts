@@ -70,9 +70,19 @@ export function setupAuth(app: Express) {
       httpOnly: true,
       secure: false, // Set to true in production
       sameSite: 'lax',
-      path: '/'
+      path: '/',
+      domain: undefined // Let browser set this automatically
     }
   };
+  
+  // Debug information about the cookie settings
+  console.log("Session cookie settings:", JSON.stringify({
+    name: sessionSettings.name,
+    maxAge: sessionSettings.cookie?.maxAge,
+    secure: sessionSettings.cookie?.secure,
+    sameSite: sessionSettings.cookie?.sameSite,
+    httpOnly: sessionSettings.cookie?.httpOnly
+  }));
 
   app.set("trust proxy", 1);
   app.use(session(sessionSettings));

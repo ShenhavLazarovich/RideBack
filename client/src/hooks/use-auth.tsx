@@ -38,8 +38,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async (credentials: LoginData) => {
       console.log("Attempting login with credentials:", { ...credentials, password: "[HIDDEN]" });
       const res = await apiRequest("POST", "/api/login", credentials);
+      
+      // Check document.cookie to see if the cookie was set
+      console.log("Cookies after login:", document.cookie);
+      
       const userData = await res.json();
       console.log("Login response:", userData);
+      
+      // Force a quick validation of user data
+      try {
+        const validateRes = await fetch("/api/user", {
+          credentials: "include",
+          headers: {
+            "Cache-Control": "no-cache"
+          }
+        });
+        
+        console.log("Validation request status:", validateRes.status);
+        
+        if (validateRes.ok) {
+          console.log("Session validation successful");
+        } else {
+          console.log("Session validation failed with status:", validateRes.status);
+        }
+      } catch (error) {
+        console.error("Session validation error:", error);
+      }
+      
       return userData;
     },
     onSuccess: (user: SelectUser) => {
