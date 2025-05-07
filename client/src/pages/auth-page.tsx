@@ -43,8 +43,32 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
   const [isGoogleLoading, setIsGoogleLoading] = useState<boolean>(false);
+  const [isTestLoginLoading, setIsTestLoginLoading] = useState<boolean>(false);
   const { user, loginMutation, registerMutation } = useAuth();
   const [, navigate] = useLocation();
+  
+  // Test function to login as demo user
+  const loginAsDemo = async () => {
+    try {
+      setIsTestLoginLoading(true);
+      console.log("Attempting direct login as 'demo' user");
+      loginMutation.mutate({ username: "demo", password: "password" }, {
+        onSuccess: (userData) => {
+          console.log("Demo login successful, userData:", userData);
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 500);
+        },
+        onError: (error) => {
+          console.error("Demo login failed:", error);
+        }
+      });
+    } catch (error) {
+      console.error("Error in demo login:", error);
+    } finally {
+      setTimeout(() => setIsTestLoginLoading(false), 1000);
+    }
+  };
 
   // Redirect if already logged in
   useEffect(() => {
@@ -288,7 +312,7 @@ export default function AuthPage() {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  className="w-full flex items-center justify-center gap-2"
+                  className="w-full flex items-center justify-center gap-2 mb-2"
                   onClick={handleGoogleSignIn}
                   disabled={isGoogleLoading}
                 >
@@ -301,6 +325,26 @@ export default function AuthPage() {
                     <>
                       <FcGoogle className="w-5 h-5" />
                       <span>התחבר עם Google</span>
+                    </>
+                  )}
+                </Button>
+                
+                {/* Test login button for debugging */}
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={loginAsDemo}
+                  disabled={isTestLoginLoading}
+                >
+                  {isTestLoginLoading ? (
+                    <>
+                      <span className="animate-spin mr-2">◌</span>
+                      <span>מתחבר...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>התחבר כמשתמש לדוגמה</span>
                     </>
                   )}
                 </Button>
