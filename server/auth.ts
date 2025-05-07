@@ -1,11 +1,35 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
+import * as admin from "firebase-admin";
+
+// Initialize Firebase Admin SDK if credentials are available
+const firebaseAdminInitialized = (() => {
+  try {
+    if (!process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY || !process.env.VITE_FIREBASE_PROJECT_ID) {
+      console.warn("Firebase Admin SDK initialization skipped: Missing credentials");
+      return false;
+    }
+    
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+      })
+    });
+    console.log("Firebase Admin SDK initialized successfully");
+    return true;
+  } catch (error) {
+    console.error("Firebase Admin SDK initialization error:", error);
+    return false;
+  }
+})();
 
 declare global {
   namespace Express {
@@ -124,7 +148,7 @@ export function setupAuth(app: Express) {
       const { currentPassword, newPassword } = req.body;
       
       // Verify current password
-      const user = await storage.getUser(req.user.id);
+      const user = await storage.getUser(req.user!.id);
       const isValid = await comparePasswords(currentPassword, user.password);
       
       if (!isValid) {
@@ -138,6 +162,54 @@ export function setupAuth(app: Express) {
       res.json({ success: true });
     } catch (error) {
       next(error);
+    }
+  });
+
+  // Handle Firebase authentication
+  app.post("/api/auth/firebase", async (req, res, next) => {
+    try {
+      if (!firebaseAdminInitialized) {
+        return res.status(500).json({ message: "Firebase authentication is not configured on the server" });
+      }
+
+      const { idToken } = req.body;
+      if (!idToken) {
+        return res.status(400).json({ message: "Missing ID token" });
+      }
+
+      // Verify Firebase ID token
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      const { uid, email, name, picture } = decodedToken;
+
+      // Check if user exists by firebase_uid
+      let user = await storage.getUserByFirebaseUid(uid);
+
+      if (!user) {
+        // Create new user with Firebase info
+        const username = email ? email.split('@')[0] : `user_${uid.substring(0, 8)}`;
+        
+        // Generate a random password for the user (they'll use Firebase auth, so this is just a placeholder)
+        const randomPassword = randomBytes(16).toString('hex');
+        const hashedPassword = await hashPassword(randomPassword);
+        
+        user = await storage.createUser({
+          username,
+          password: hashedPassword,
+          firebase_uid: uid,
+          email: email || null,
+          displayName: name || username,
+          profilePicture: picture || null
+        });
+      }
+
+      // Log user in
+      req.login(user, (err) => {
+        if (err) return next(err);
+        return res.status(200).json(user);
+      });
+    } catch (error: any) {
+      console.error("Firebase authentication error:", error);
+      res.status(401).json({ message: error.message || "Authentication failed" });
     }
   });
 }
