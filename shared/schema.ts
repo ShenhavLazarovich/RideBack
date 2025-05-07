@@ -17,11 +17,7 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const usersRelations = relations(users, ({ many }) => ({
-  bikes: many(bikes),
-  reports: many(bikeReports),
-  alerts: many(alerts)
-}));
+// User relations defined below after all tables are created
 
 // Bike table
 export const bikes = pgTable("bikes", {
@@ -128,6 +124,63 @@ export const insertReportSchema = createInsertSchema(bikeReports, {
   theftLocation: (schema) => schema.min(1, "יש להזין מיקום גניבה"),
 }).omit({ id: true, userId: true, status: true, createdAt: true, updatedAt: true });
 
+// Badges table
+export const badges = pgTable("badges", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  imageUrl: text("image_url").notNull(),
+  category: text("category").notNull(), // safety, community, activity, expertise
+  level: integer("level").notNull().default(1), // 1=bronze, 2=silver, 3=gold
+  requirements: json("requirements").notNull(), // criteria for unlocking
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// User achievements table
+export const userAchievements = pgTable("user_achievements", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  badgeId: integer("badge_id").references(() => badges.id).notNull(),
+  completedAt: timestamp("completed_at").defaultNow().notNull(),
+  progress: json("progress"), // optional progress data
+});
+
+// Add relations
+export const badgesRelations = relations(badges, ({ many }) => ({
+  achievements: many(userAchievements)
+}));
+
+export const userAchievementsRelations = relations(userAchievements, ({ one }) => ({
+  user: one(users, {
+    fields: [userAchievements.userId],
+    references: [users.id]
+  }),
+  badge: one(badges, {
+    fields: [userAchievements.badgeId],
+    references: [badges.id]
+  })
+}));
+
+// Define user relations with all related entities
+export const usersRelations = relations(users, ({ many }) => ({
+  bikes: many(bikes),
+  reports: many(bikeReports),
+  alerts: many(alerts),
+  achievements: many(userAchievements)
+}));
+
+// Create schemas for badge operations
+export const insertBadgeSchema = createInsertSchema(badges, {
+  name: (schema) => schema.min(2, "שם התג חייב להכיל לפחות 2 תווים"),
+  description: (schema) => schema.min(10, "תיאור התג חייב להכיל לפחות 10 תווים"),
+}).omit({ id: true, createdAt: true });
+
+// Create schemas for user achievement operations
+export const insertUserAchievementSchema = createInsertSchema(userAchievements).omit({ 
+  id: true, 
+  completedAt: true 
+});
+
 // Type exports
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -148,6 +201,15 @@ export type BikeReport = typeof bikeReports.$inferSelect & {
 };
 
 export type Alert = typeof alerts.$inferSelect;
+
+// Badge related types
+export type Badge = typeof badges.$inferSelect;
+export type InsertBadge = z.infer<typeof insertBadgeSchema>;
+
+export type UserAchievement = typeof userAchievements.$inferSelect & {
+  badge?: Badge;
+};
+export type InsertUserAchievement = z.infer<typeof insertUserAchievementSchema>;
 
 // Search result type
 export type BikeSearch = {
