@@ -2,8 +2,9 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
+import { db } from "../db";
 import { z } from "zod";
-import { bikes, alerts, bikeReports, insertBikeSchema, insertReportSchema, updateProfileSchema } from "@shared/schema";
+import { bikes, alerts, bikeReports, badges, userAchievements, insertBikeSchema, insertReportSchema, updateProfileSchema, insertBadgeSchema, insertUserAchievementSchema } from "@shared/schema";
 import { eq, and, desc, like, or, gte, lte } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -298,6 +299,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
         page: currentPage,
         limit: itemsPerPage,
         totalPages: Math.ceil(total / itemsPerPage)
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Badges routes
+  app.get("/api/badges", async (req, res, next) => {
+    try {
+      // Get all badges
+      const allBadges = await db.query.badges.findMany({
+        orderBy: [desc(badges.level), desc(badges.category)]
+      });
+      res.json(allBadges);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/badges/:id", async (req, res, next) => {
+    try {
+      const badgeId = parseInt(req.params.id);
+      const badge = await db.query.badges.findFirst({
+        where: eq(badges.id, badgeId)
+      });
+      
+      if (!badge) {
+        return res.status(404).json({ message: "התג לא נמצא" });
+      }
+      
+      res.json(badge);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Admin route - create a new badge (locked down in production)
+  app.post("/api/badges", ensureAuthenticated, async (req: any, res, next) => {
+    try {
+      // In production, add additional admin check
+      const isAdmin = req.user.id === 1; // Temporary admin check
+      if (!isAdmin) {
+        return res.status(403).json({ message: "אין לך הרשאה לבצע פעולה זו" });
+      }
+      
+      const validatedData = insertBadgeSchema.parse(req.body);
+      const newBadge = await db.insert(badges).values(validatedData).returning();
+      res.status(201).json(newBadge[0]);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
+  // User achievements routes
+  app.get("/api/achievements", ensureAuthenticated, async (req: any, res, next) => {
+    try {
+      // Get user's achievements with badge details
+      const userAchievementsList = await db.query.userAchievements.findMany({
+        where: eq(userAchievements.userId, req.user.id),
+        with: {
+          badge: true
+        },
+        orderBy: desc(userAchievements.completedAt)
+      });
+      
+      res.json(userAchievementsList);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/achievements/check", ensureAuthenticated, async (req: any, res, next) => {
+    try {
+      const { action, data } = req.body;
+      
+      // Find badges that meet the requirements for this action
+      const eligibleBadges = await db.query.badges.findMany({
+        where: (badgeFields) => {
+          // We would parse the requirements JSON and check conditions
+          // For this demo, we'll use a simplified check
+          if (action === 'bike_registration') {
+            return eq(badgeFields.category, 'activity');
+          } else if (action === 'guide_completion') {
+            return eq(badgeFields.category, 'expertise');
+          } else if (action === 'registration') {
+            return eq(badgeFields.category, 'community');
+          }
+          return eq(badgeFields.id, 0); // No match
+        }
+      });
+      
+      // Get user's existing achievements
+      const existingAchievements = await db.query.userAchievements.findMany({
+        where: eq(userAchievements.userId, req.user.id),
+        columns: {
+          badgeId: true
+        }
+      });
+      
+      const existingBadgeIds = new Set(existingAchievements.map(a => a.badgeId));
+      
+      // Award new badges the user doesn't already have
+      const newAchievements = [];
+      
+      for (const badge of eligibleBadges) {
+        if (!existingBadgeIds.has(badge.id)) {
+          // Check if requirements are met
+          const requirements = badge.requirements as any;
+          let requirementsMet = false;
+          
+          // Simple check for different badge types
+          if (action === 'bike_registration' && badge.name === 'רשום אופניים') {
+            requirementsMet = true;
+          } else if (action === 'guide_completion' && badge.name === 'מומחה מתחיל' && data?.guideId === 'basic_maintenance') {
+            requirementsMet = true;
+          } else if (action === 'registration' && badge.name === 'חבר קהילה') {
+            requirementsMet = true;
+          }
+          
+          if (requirementsMet) {
+            // Award the badge
+            const newAchievement = await db.insert(userAchievements).values({
+              userId: req.user.id,
+              badgeId: badge.id,
+              progress: JSON.stringify({ actionId: action, data })
+            }).returning();
+            
+            newAchievements.push({
+              achievement: newAchievement[0],
+              badge
+            });
+            
+            // Create an alert for the user about the new badge
+            await storage.createAlert({
+              userId: req.user.id,
+              title: `קיבלת תג חדש: ${badge.name}`,
+              message: `ברכות! קיבלת את התג "${badge.name}": ${badge.description}`,
+              type: 'achievement',
+              relatedEntityType: 'badge',
+              relatedEntityId: badge.id
+            });
+          }
+        }
+      }
+      
+      res.json({
+        checked: eligibleBadges.length,
+        awarded: newAchievements.length,
+        newAchievements
       });
     } catch (error) {
       next(error);
