@@ -457,6 +457,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get theft reports with coordinates for the map
+  app.get("/api/reports/map", async (req, res, next) => {
+    try {
+      const reports = await db
+        .select({
+          id: bikeReports.id,
+          theftDate: bikeReports.theftDate,
+          theftLocation: bikeReports.theftLocation,
+          latitude: bikeReports.latitude,
+          longitude: bikeReports.longitude,
+          status: bikeReports.status,
+          bike: {
+            id: bikes.id,
+            brand: bikes.brand,
+            model: bikes.model,
+            color: bikes.color,
+            imageUrl: bikes.imageUrl
+          }
+        })
+        .from(bikeReports)
+        .leftJoin(bikes, eq(bikeReports.bikeId, bikes.id))
+        .where(eq(bikeReports.status, "active"))
+        .orderBy(desc(bikeReports.createdAt));
+
+      res.json(reports);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
