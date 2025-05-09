@@ -100,3 +100,50 @@
     transform: scaleX(-1);
   }
 }
+
+.theft-marker {
+  cursor: pointer;
+}
+
+.marker-content {
+  display: flex;
+  align-items: center;
+  background: white;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.marker-icon {
+  font-size: 24px;
+  margin-left: 8px;
+}
+
+.marker-info {
+  font-size: 12px;
+}
+
+.popup-content {
+  padding: 8px;
+  max-width: 200px;
+}
+
+.popup-content img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.popup-content h3 {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.popup-content p {
+  font-size: 12px;
+  margin: 2px 0;
+  color: #666;
+}
