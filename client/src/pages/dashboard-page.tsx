@@ -12,6 +12,7 @@ import { QuickStat } from "@/components/bikes/QuickStat";
 import { getFirstName } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Bike, Alert } from "@shared/schema";
+import { TheftMap } from "@/components/map/TheftMap";
 
 export default function DashboardPage() {
   const [location] = useLocation();
@@ -93,6 +94,12 @@ export default function DashboardPage() {
                 value={stats.newAlerts} 
                 color="secondary" 
               />
+            </div>
+            
+            {/* Theft Map */}
+            <div className="mb-8">
+              <h3 className="text-xl font-bold mb-4">מפת גניבות פעילה</h3>
+              <TheftMap />
             </div>
             
             {/* Alert Banner - show only if there are active theft reports */}

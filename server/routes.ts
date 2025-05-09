@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { db } from "../db";
 import { z } from "zod";
 import { bikes, alerts, bikeReports, badges, userAchievements, insertBikeSchema, insertReportSchema, updateProfileSchema, insertBadgeSchema, insertUserAchievementSchema } from "@shared/schema";
-import { eq, and, desc, like, or, gte, lte } from "drizzle-orm";
+import { eq, and, desc, like, or, gte, lte, isNotNull } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Debug middleware for cookies
@@ -458,7 +458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get theft reports with coordinates for the map
-  app.get("/api/reports/map", async (req, res, next) => {
+  app.get("/api/reports/map", ensureAuthenticated, async (req: any, res, next) => {
     try {
       const reports = await db
         .select({
@@ -478,11 +478,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .from(bikeReports)
         .leftJoin(bikes, eq(bikeReports.bikeId, bikes.id))
-        .where(eq(bikeReports.status, "active"))
+        .where(and(
+          eq(bikeReports.status, "active"),
+          isNotNull(bikeReports.latitude),
+          isNotNull(bikeReports.longitude)
+        ))
         .orderBy(desc(bikeReports.createdAt));
+
+      // Handle empty results
+      if (!reports.length) {
+        return res.json([]);
+      }
 
       res.json(reports);
     } catch (error) {
+      console.error('Error fetching map reports:', error);
       next(error);
     }
   });
