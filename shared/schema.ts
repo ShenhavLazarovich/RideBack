@@ -62,6 +62,8 @@ export const bikeReports = pgTable("bike_reports", {
   contactEmail: text("contact_email"),
   visibility: text("visibility").default("public"), // public, private
   status: text("status").default("active"), // active, resolved
+  latitude: text("latitude"),
+  longitude: text("longitude"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
