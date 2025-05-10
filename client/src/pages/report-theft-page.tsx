@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
 import { MobileNavigation } from "@/components/layout/MobileNavigation";
@@ -27,6 +29,13 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Bike } from "@shared/schema";
 import { Link } from "wouter";
 
+// Initialize Mapbox
+const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN;
+if (!mapboxToken) {
+  console.error("Mapbox token is missing! Please check your .env file");
+}
+mapboxgl.accessToken = mapboxToken;
+
 // Form schema for theft report
 const theftReportSchema = z.object({
   bikeId: z.coerce.number().min(1, { message: "יש לבחור אופניים" }),
@@ -41,6 +50,8 @@ const theftReportSchema = z.object({
   contactPhone: z.string().optional(),
   contactEmail: z.string().email({ message: "כתובת דוא\"ל לא תקינה" }).optional(),
   visibility: z.enum(["public", "private"]).default("public"),
+  latitude: z.string().min(1, { message: "יש לבחור מיקום במפה" }),
+  longitude: z.string().min(1, { message: "יש לבחור מיקום במפה" }),
 });
 
 type TheftReportFormValues = z.infer<typeof theftReportSchema>;
@@ -50,6 +61,9 @@ export default function ReportTheftPage() {
   const [, navigate] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useAuth();
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
+  const marker = useRef<mapboxgl.Marker | null>(null);
   
   // Fetch user's registered bikes that are not already reported as stolen
   const { data: bikes = [], isLoading: loadingBikes } = useQuery<Bike[]>({
@@ -72,12 +86,54 @@ export default function ReportTheftPage() {
       contactPhone: "",
       contactEmail: "",
       visibility: "public",
+      latitude: "",
+      longitude: "",
     },
   });
   
   // Watch form fields for conditional rendering
   const policeReported = form.watch("policeReported");
   const useProfileContact = form.watch("useProfileContact");
+
+  // Initialize map
+  useEffect(() => {
+    if (!mapContainer.current) return;
+
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: "mapbox://styles/mapbox/streets-v12",
+      center: [34.7818, 32.0853], // Tel Aviv coordinates
+      zoom: 11
+    });
+
+    // Add navigation controls
+    map.current.addControl(new mapboxgl.NavigationControl());
+
+    // Add click handler to place marker
+    map.current.on('click', (e) => {
+      const { lng, lat } = e.lngLat;
+      
+      // Update form values
+      form.setValue('latitude', lat.toString());
+      form.setValue('longitude', lng.toString());
+      
+      // Update marker
+      if (marker.current) {
+        marker.current.remove();
+      }
+      
+      marker.current = new mapboxgl.Marker()
+        .setLngLat([lng, lat])
+        .addTo(map.current!);
+    });
+
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+    };
+  }, [form]);
   
   // Report theft mutation
   const reportTheftMutation = useMutation({
@@ -100,353 +156,382 @@ export default function ReportTheftPage() {
   const handleCancel = () => {
     navigate("/");
   };
-  
+
   return (
-    <>
+    <div className="min-h-screen bg-background">
       <MobileHeader 
         title="דיווח על גניבה" 
-        showBackButton={true}
-        toggleMobileMenu={() => setIsMobileMenuOpen(true)} 
-      />
-      <DesktopSidebar activeRoute={location} />
-      <MobileMenu 
-        isOpen={isMobileMenuOpen} 
-        activeRoute={location} 
-        onClose={() => setIsMobileMenuOpen(false)} 
+        onMenuClick={() => setIsMobileMenuOpen(true)} 
       />
       
-      <main className="pt-16 md:pt-0 md:pr-64 min-h-screen pb-20 md:pb-0">
-        <section className="p-4 md:p-8">
-          <div className="max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold mb-6">דיווח על גניבת אופניים</h2>
-            
-            <div className="bg-white rounded-lg shadow p-6">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  {/* Select Bicycle */}
-                  <h3 className="text-lg font-bold mb-4">בחר אופניים</h3>
-                  <div className="mb-6">
-                    <p className="text-muted-foreground text-sm mb-3">
-                      בחר מהאופניים הרשומים שלך או <Link href="/register" className="text-primary">רשום אופניים חדשים</Link>
-                    </p>
-                    
-                    {loadingBikes ? (
-                      <div className="text-center py-4">
-                        <i className="fas fa-spinner fa-spin text-primary text-2xl"></i>
-                        <p className="mt-2 text-muted-foreground">טוען אופניים...</p>
-                      </div>
-                    ) : bikes.length === 0 ? (
-                      <div className="bg-muted p-4 rounded-lg text-center">
-                        <i className="fas fa-exclamation-circle text-muted-foreground text-xl mb-2"></i>
-                        <p className="text-muted-foreground">אין לך אופניים רשומים שניתן לדווח עליהם.</p>
-                        <Button asChild className="mt-2">
-                          <Link href="/register">רשום אופניים עכשיו</Link>
-                        </Button>
-                      </div>
-                    ) : (
-                      <FormField
-                        control={form.control}
-                        name="bikeId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <div className="space-y-3">
-                              {bikes.map((bike) => (
-                                <div key={bike.id} className="flex items-center">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-2xl font-bold mb-6">דיווח על גניבת אופניים</h1>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              {/* Bike Selection */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold">בחירת אופניים</h3>
+                
+                {loadingBikes ? (
+                  <div className="text-center py-4">
+                    <i className="fas fa-spinner fa-spin text-primary text-2xl"></i>
+                    <p className="mt-2 text-muted-foreground">טוען רשימת אופניים...</p>
+                  </div>
+                ) : bikes.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">אין לך אופניים רשומים</p>
+                    <Link href="/register-bike">
+                      <Button variant="link" className="mt-2">
+                        הוסף אופניים חדשים
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <FormField
+                    control={form.control}
+                    name="bikeId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="space-y-3">
+                          {bikes.map((bike) => (
+                            <div key={bike.id} className="flex items-center">
+                              <FormControl>
+                                <RadioGroup
+                                  onValueChange={(value) => field.onChange(parseInt(value))}
+                                  defaultValue={field.value.toString()}
+                                  className="flex flex-col space-y-1"
+                                >
                                   <FormControl>
-                                    <RadioGroup
-                                      onValueChange={(value) => field.onChange(parseInt(value))}
-                                      defaultValue={field.value.toString()}
-                                      className="flex flex-col space-y-1"
-                                    >
-                                      <FormItem className="flex items-center space-x-3 space-y-0 p-3 border border-neutral-light rounded-lg cursor-pointer hover:bg-neutral-lighter">
-                                        <FormControl>
-                                          <RadioGroupItem value={bike.id.toString()} className="ml-3" />
-                                        </FormControl>
-                                        <div className="flex items-center flex-1">
-                                          <div className="w-14 h-14 bg-muted rounded overflow-hidden ml-3">
-                                            {bike.imageUrl ? (
-                                              <img 
-                                                src={bike.imageUrl} 
-                                                alt={`${bike.brand} ${bike.model}`} 
-                                                className="w-full h-full object-cover"
-                                              />
-                                            ) : (
-                                              <div className="w-full h-full flex items-center justify-center">
-                                                <i className="fas fa-bicycle text-muted-foreground text-2xl"></i>
-                                              </div>
-                                            )}
-                                          </div>
-                                          <div>
-                                            <p className="font-medium">{bike.brand} {bike.model}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                              {bike.type === "road" ? "אופניי כביש" : 
-                                               bike.type === "mountain" ? "אופני הרים" : 
-                                               bike.type === "electric" ? "אופניים חשמליים" : "אחר"} | {bike.color} | {bike.year}
-                                            </p>
-                                          </div>
-                                        </div>
-                                      </FormItem>
-                                    </RadioGroup>
+                                    <RadioGroupItem value={bike.id.toString()} className="ml-3" />
                                   </FormControl>
-                                </div>
-                              ))}
+                                  <div className="flex items-center flex-1">
+                                    <div className="w-14 h-14 bg-muted rounded overflow-hidden ml-3">
+                                      {bike.imageUrl ? (
+                                        <img 
+                                          src={bike.imageUrl} 
+                                          alt={`${bike.brand} ${bike.model}`} 
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                          <i className="fas fa-bicycle text-muted-foreground text-2xl"></i>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <p className="font-medium">{bike.brand} {bike.model}</p>
+                                      <p className="text-sm text-muted-foreground">
+                                        {bike.type === "road" ? "אופניי כביש" : 
+                                         bike.type === "mountain" ? "אופני הרים" : 
+                                         bike.type === "electric" ? "אופניים חשמליים" : "אחר"} | {bike.color} | {bike.year}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </RadioGroup>
+                              </FormControl>
                             </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                          ))}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </div>
-                  
-                  {/* Theft Details */}
-                  <h3 className="text-lg font-bold mb-4">פרטי הגניבה</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  />
+                )}
+              </div>
+              
+              {/* Theft Details */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold">פרטי הגניבה</h3>
+                
+                <FormField
+                  control={form.control}
+                  name="theftDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>תאריך הגניבה</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="theftLocation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>מיקום הגניבה</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="לדוגמה: רחוב הרצל 1, תל אביב" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Map Picker */}
+                <div className="space-y-2">
+                  <FormLabel>בחר מיקום במפה</FormLabel>
+                  <div 
+                    ref={mapContainer} 
+                    className="w-full h-[300px] rounded-lg border"
+                  />
+                  <FormDescription>
+                    לחץ על המפה כדי לסמן את מיקום הגניבה המדויק
+                  </FormDescription>
+                  <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name="theftDate"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>תאריך הגניבה</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="theftLocation"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>מיקום הגניבה</FormLabel>
-                          <FormControl>
-                            <Input placeholder="עיר, רחוב, מספר או מקום ציבורי" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="theftDetails"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>פרטים נוספים</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="תיאור האירוע ופרטים רלוונטים שיכולים לעזור במציאת האופניים"
-                              className="resize-none"
-                              rows={4}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  {/* Police Report */}
-                  <h3 className="text-lg font-bold mb-4">דיווח למשטרה</h3>
-                  <div className="mb-6">
-                    <FormField
-                      control={form.control}
-                      name="policeReported"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 mb-4">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              className="ml-2"
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>דיווחתי למשטרה על הגניבה</FormLabel>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    {policeReported && (
-                      <div className="pl-6 border-r-2 border-neutral-light pr-3 space-y-4">
-                        <FormField
-                          control={form.control}
-                          name="policeStation"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>תחנת משטרה</FormLabel>
-                              <FormControl>
-                                <Input placeholder="שם התחנה" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="policeFileNumber"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>מספר תיק</FormLabel>
-                              <FormControl>
-                                <Input placeholder="מספר התיק במשטרה" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Contact Information */}
-                  <h3 className="text-lg font-bold mb-4">פרטי קשר לשיתוף בדיווח הציבורי</h3>
-                  <div className="mb-6">
-                    <FormField
-                      control={form.control}
-                      name="useProfileContact"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 mb-4">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              className="ml-2 mt-1"
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>השתמש בפרטי הקשר מהפרופיל שלי</FormLabel>
-                            <FormDescription>
-                              {user?.phone && `טלפון: ${user.phone} | `}
-                              {user?.email && `דוא"ל: ${user.email}`}
-                            </FormDescription>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    {!useProfileContact && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="contactName"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>שם איש קשר</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="contactPhone"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>טלפון</FormLabel>
-                              <FormControl>
-                                <Input type="tel" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="contactEmail"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>דוא"ל</FormLabel>
-                              <FormControl>
-                                <Input type="email" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Visibility Settings */}
-                  <h3 className="text-lg font-bold mb-4">הגדרות פרטיות</h3>
-                  <div className="mb-6">
-                    <FormField
-                      control={form.control}
-                      name="visibility"
+                      name="latitude"
                       render={({ field }) => (
                         <FormItem>
+                          <FormLabel>קו רוחב</FormLabel>
                           <FormControl>
-                            <RadioGroup
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                              className="flex flex-col space-y-3"
-                            >
-                              <FormItem className="flex items-start space-x-2 space-y-0">
-                                <FormControl>
-                                  <RadioGroupItem value="public" className="ml-2 mt-1" />
-                                </FormControl>
-                                <div className="leading-none">
-                                  <FormLabel className="font-medium">דיווח ציבורי</FormLabel>
-                                  <FormDescription>
-                                    הדיווח יופיע במאגר החיפוש הציבורי ויעזור לאנשים לזהות את האופניים שלך
-                                  </FormDescription>
-                                </div>
-                              </FormItem>
-                              <FormItem className="flex items-start space-x-2 space-y-0">
-                                <FormControl>
-                                  <RadioGroupItem value="private" className="ml-2 mt-1" />
-                                </FormControl>
-                                <div className="leading-none">
-                                  <FormLabel className="font-medium">דיווח פרטי</FormLabel>
-                                  <FormDescription>
-                                    הדיווח ישמר רק במערכת שלנו ולא יופיע בחיפוש הציבורי
-                                  </FormDescription>
-                                </div>
-                              </FormItem>
-                            </RadioGroup>
+                            <Input {...field} readOnly />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="longitude"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>קו אורך</FormLabel>
+                          <FormControl>
+                            <Input {...field} readOnly />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   </div>
-                  
-                  {/* Submit */}
-                  <div className="mt-8 flex flex-col md:flex-row md:items-center md:justify-between">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={handleCancel}
-                      className="order-2 md:order-1 mt-4 md:mt-0"
-                    >
-                      בטל
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="order-1 md:order-2 bg-destructive text-white w-full md:w-auto"
-                      disabled={reportTheftMutation.isPending || bikes.length === 0}
-                    >
-                      {reportTheftMutation.isPending ? "מדווח על גניבה..." : "דווח על גניבה"}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </div>
-          </div>
-        </section>
-      </main>
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="theftDetails"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>פרטים נוספים</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          {...field} 
+                          placeholder="תאר את הנסיבות, האם האופניים היו נעולים, האם יש עדים וכו'"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              {/* Police Report */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold">דיווח למשטרה</h3>
+                
+                <FormField
+                  control={form.control}
+                  name="policeReported"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          דיווחתי למשטרה על הגניבה
+                        </FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                
+                {policeReported && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="policeStation"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>תחנת משטרה</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="לדוגמה: תחנת תל אביב צפון" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="policeFileNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>מספר תיק</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="לדוגמה: 20230412-123" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+              </div>
+              
+              {/* Contact Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold">פרטי התקשרות</h3>
+                
+                <FormField
+                  control={form.control}
+                  name="useProfileContact"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          השתמש בפרטי ההתקשרות שלי מהפרופיל
+                        </FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                
+                {!useProfileContact && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="contactName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>שם מלא</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="contactPhone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>טלפון</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="tel" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="contactEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>דוא"ל</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="email" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+              </div>
+              
+              {/* Visibility */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold">הגדרות פרטיות</h3>
+                
+                <FormField
+                  control={form.control}
+                  name="visibility"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>חשיפת הדיווח</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-1"
+                        >
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="public" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              פומבי - כל המשתמשים יוכלו לראות את הדיווח
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="private" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              פרטי - רק אתה תוכל לראות את הדיווח
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              {/* Submit Buttons */}
+              <div className="flex justify-end space-x-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                >
+                  ביטול
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={reportTheftMutation.isPending}
+                >
+                  {reportTheftMutation.isPending ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin ml-2"></i>
+                      שולח...
+                    </>
+                  ) : (
+                    "שלח דיווח"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
+      </div>
       
-      <MobileNavigation activeRoute={location} />
-    </>
+      <MobileNavigation />
+      <MobileMenu 
+        isOpen={isMobileMenuOpen} 
+        onClose={() => setIsMobileMenuOpen(false)} 
+      />
+    </div>
   );
 }
