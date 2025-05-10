@@ -11,20 +11,42 @@ export const QuickStat: React.FC<QuickStatProps> = ({
   value, 
   color = "primary" 
 }) => {
-  const getTextColorClass = () => {
+  const getColorClasses = () => {
     switch (color) {
-      case "primary": return "text-primary";
-      case "success": return "text-success";
-      case "destructive": return "text-destructive";
-      case "secondary": return "text-secondary";
-      default: return "text-primary";
+      case "primary": 
+        return {
+          text: "text-primary",
+          bg: "bg-primary/5"
+        };
+      case "success": 
+        return {
+          text: "text-success",
+          bg: "bg-success/5"
+        };
+      case "destructive": 
+        return {
+          text: "text-destructive",
+          bg: "bg-destructive/5"
+        };
+      case "secondary": 
+        return {
+          text: "text-secondary",
+          bg: "bg-secondary/5"
+        };
+      default: 
+        return {
+          text: "text-primary",
+          bg: "bg-primary/5"
+        };
     }
   };
 
+  const colors = getColorClasses();
+
   return (
-    <div className="bg-white rounded-lg shadow p-4 text-center">
+    <div className={`rounded-lg shadow p-4 text-center ${colors.bg}`}>
       <p className="text-muted-foreground text-sm mb-1">{label}</p>
-      <p className={`text-2xl font-bold ${getTextColorClass()}`}>{value}</p>
+      <p className={`text-2xl font-bold ${colors.text}`}>{value}</p>
     </div>
   );
 };

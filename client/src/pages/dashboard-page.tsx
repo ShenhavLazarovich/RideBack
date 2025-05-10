@@ -16,6 +16,7 @@ import { TheftMap } from "@/components/map/TheftMap";
 
 export default function DashboardPage() {
   const [location] = useLocation();
+  const [, navigate] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useAuth();
   
@@ -116,18 +117,27 @@ export default function DashboardPage() {
             {/* Quick Actions */}
             <h3 className="text-xl font-bold mb-4">פעולות מהירות</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-              <Link href="/register" className="bg-white rounded-lg shadow p-5 text-center hover:shadow-md transition-shadow">
+              <button 
+                onClick={() => navigate("/register")} 
+                className="bg-white rounded-lg shadow p-5 text-center hover:shadow-md transition-shadow"
+              >
                 <i className="fas fa-bicycle text-2xl text-primary mb-3"></i>
                 <p className="font-medium">רישום אופניים</p>
-              </Link>
-              <Link href="/report" className="bg-white rounded-lg shadow p-5 text-center hover:shadow-md transition-shadow">
+              </button>
+              <button 
+                onClick={() => navigate("/report")} 
+                className="bg-white rounded-lg shadow p-5 text-center hover:shadow-md transition-shadow"
+              >
                 <i className="fas fa-exclamation-triangle text-2xl text-destructive mb-3"></i>
                 <p className="font-medium">דיווח על גניבה</p>
-              </Link>
-              <Link href="/search" className="bg-white rounded-lg shadow p-5 text-center hover:shadow-md transition-shadow">
+              </button>
+              <button 
+                onClick={() => navigate("/search")} 
+                className="bg-white rounded-lg shadow p-5 text-center hover:shadow-md transition-shadow"
+              >
                 <i className="fas fa-search text-2xl text-secondary mb-3"></i>
                 <p className="font-medium">חיפוש אופניים</p>
-              </Link>
+              </button>
             </div>
             
             {/* My Bicycles */}

@@ -103,14 +103,15 @@ export default function SearchPage() {
     
     // Previous page button
     paginationItems.push(
-      <a 
+      <button 
         key="prev" 
-        href="#" 
-        onClick={(e) => { e.preventDefault(); handlePageChange(currentPage - 1); }}
+        type="button"
+        onClick={() => handlePageChange(currentPage - 1)}
         className={`inline-flex items-center px-3 py-2 rounded-r-md border border-neutral-light bg-white text-muted-foreground hover:bg-neutral-lighter ${currentPage === 1 ? 'opacity-50 pointer-events-none' : ''}`}
+        disabled={currentPage === 1}
       >
         <ChevronRight className="h-4 w-4" />
-      </a>
+      </button>
     );
 
     // Page numbers
@@ -124,31 +125,33 @@ export default function SearchPage() {
 
     for (let i = startPage; i <= endPage; i++) {
       paginationItems.push(
-        <a 
+        <button 
           key={i} 
-          href="#" 
-          onClick={(e) => { e.preventDefault(); handlePageChange(i); }}
+          type="button"
+          onClick={() => handlePageChange(i)}
           className={`inline-flex items-center px-4 py-2 border border-neutral-light ${
             i === currentPage 
               ? 'bg-primary text-white' 
               : 'bg-white text-muted-foreground hover:bg-neutral-lighter'
           }`}
+          aria-current={i === currentPage ? 'page' : undefined}
         >
           {i}
-        </a>
+        </button>
       );
     }
 
     // Next page button
     paginationItems.push(
-      <a 
+      <button 
         key="next" 
-        href="#" 
-        onClick={(e) => { e.preventDefault(); handlePageChange(currentPage + 1); }}
+        type="button"
+        onClick={() => handlePageChange(currentPage + 1)}
         className={`inline-flex items-center px-3 py-2 rounded-l-md border border-neutral-light bg-white text-muted-foreground hover:bg-neutral-lighter ${currentPage === totalPages ? 'opacity-50 pointer-events-none' : ''}`}
+        disabled={currentPage === totalPages}
       >
         <ChevronLeft className="h-4 w-4" />
-      </a>
+      </button>
     );
 
     return (

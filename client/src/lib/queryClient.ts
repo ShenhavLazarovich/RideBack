@@ -13,6 +13,7 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<Response> {
   console.log(`Making ${method} request to ${url}`, data ? 'with data' : 'without data');
+  console.log('Current cookies:', document.cookie);
   
   const res = await fetch(url, {
     method,
@@ -26,7 +27,12 @@ export async function apiRequest(
     credentials: "include",
   });
 
-  console.log(`Response from ${url}:`, res.status, res.statusText);
+  console.log(`Response from ${url}:`, {
+    status: res.status,
+    statusText: res.statusText,
+    headers: Object.fromEntries(res.headers.entries()),
+    cookies: document.cookie
+  });
   
   await throwIfResNotOk(res);
   return res;

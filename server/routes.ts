@@ -173,13 +173,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "האופניים לא נמצאו" });
       }
       
-      // Create the report and update bike status
+      // Create the report
       const newReport = await storage.createTheftReport({
         ...validatedData,
         userId: req.user!.id,
         status: "active"
       });
       
+      // Update bike status to stolen
       await storage.updateBike(validatedData.bikeId, { status: "stolen" });
       
       res.status(201).json(newReport);

@@ -36,6 +36,20 @@ if (!mapboxToken) {
 }
 mapboxgl.accessToken = mapboxToken;
 
+// Add geocoding function
+async function searchAddress(query: string) {
+  try {
+    const response = await fetch(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxToken}&country=il&language=he`
+    );
+    const data = await response.json();
+    return data.features;
+  } catch (error) {
+    console.error('Error searching address:', error);
+    return [];
+  }
+}
+
 // Form schema for theft report
 const theftReportSchema = z.object({
   bikeId: z.coerce.number().min(1, { message: "יש לבחור אופניים" }),
@@ -57,13 +71,15 @@ const theftReportSchema = z.object({
 type TheftReportFormValues = z.infer<typeof theftReportSchema>;
 
 export default function ReportTheftPage() {
-  const [location] = useLocation();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useAuth();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
+  const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeout = useRef<NodeJS.Timeout>();
   
   // Fetch user's registered bikes that are not already reported as stolen
   const { data: bikes = [], isLoading: loadingBikes } = useQuery<Bike[]>({
@@ -138,17 +154,30 @@ export default function ReportTheftPage() {
   // Report theft mutation
   const reportTheftMutation = useMutation({
     mutationFn: async (data: TheftReportFormValues) => {
-      const res = await apiRequest("POST", "/api/reports", data);
+      const res = await apiRequest("POST", "/api/reports", {
+        ...data,
+        theftDate: new Date(data.theftDate).toISOString(),
+        status: "active"
+      });
       return await res.json();
     },
     onSuccess: () => {
+      console.log("onSettled called 1");
       queryClient.invalidateQueries({ queryKey: ["/api/bikes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
-      navigate("/");
+      console.log("onSettled called 2");
     },
+    onError: (error) => {
+      console.error("Error submitting theft report:", error);
+    },
+    onSettled: () => {
+      console.log("onSettled called, navigating to main page");
+      window.location.href = "/";
+    }
   });
   
   const onSubmit = (data: TheftReportFormValues) => {
+    console.log("onSubmit called with data:", data);
     reportTheftMutation.mutate(data);
   };
   
@@ -157,11 +186,55 @@ export default function ReportTheftPage() {
     navigate("/");
   };
 
+  // Add address search handler
+  const handleAddressSearch = async (value: string) => {
+    if (searchTimeout.current) {
+      clearTimeout(searchTimeout.current);
+    }
+
+    if (!value.trim()) {
+      setAddressSuggestions([]);
+      return;
+    }
+
+    searchTimeout.current = setTimeout(async () => {
+      setIsSearching(true);
+      const results = await searchAddress(value);
+      setAddressSuggestions(results);
+      setIsSearching(false);
+    }, 300);
+  };
+
+  // Add address selection handler
+  const handleAddressSelect = (feature: any) => {
+    const [lng, lat] = feature.center;
+    form.setValue('theftLocation', feature.place_name);
+    form.setValue('latitude', lat.toString());
+    form.setValue('longitude', lng.toString());
+    setAddressSuggestions([]);
+
+    // Update map
+    if (map.current) {
+      map.current.flyTo({
+        center: [lng, lat],
+        zoom: 15
+      });
+
+      if (marker.current) {
+        marker.current.remove();
+      }
+
+      marker.current = new mapboxgl.Marker()
+        .setLngLat([lng, lat])
+        .addTo(map.current);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <MobileHeader 
         title="דיווח על גניבה" 
-        onMenuClick={() => setIsMobileMenuOpen(true)} 
+        toggleMobileMenu={() => setIsMobileMenuOpen(true)} 
       />
       
       <div className="container mx-auto px-4 py-8">
@@ -265,9 +338,40 @@ export default function ReportTheftPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>מיקום הגניבה</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="לדוגמה: רחוב הרצל 1, תל אביב" />
-                      </FormControl>
+                      <div className="relative">
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="הקלד כתובת או מקום..."
+                            onChange={(e) => {
+                              field.onChange(e);
+                              handleAddressSearch(e.target.value);
+                            }}
+                          />
+                        </FormControl>
+                        {isSearching && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <i className="fas fa-spinner fa-spin text-muted-foreground"></i>
+                          </div>
+                        )}
+                        {addressSuggestions.length > 0 && (
+                          <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border">
+                            {addressSuggestions.map((suggestion) => (
+                              <button
+                                key={suggestion.id}
+                                type="button"
+                                className="w-full text-right px-4 py-2 hover:bg-muted cursor-pointer"
+                                onClick={() => handleAddressSelect(suggestion)}
+                              >
+                                {suggestion.place_name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <FormDescription>
+                        הקלד כתובת או מקום והמפה תתעדכן אוטומטית
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -275,13 +379,13 @@ export default function ReportTheftPage() {
 
                 {/* Map Picker */}
                 <div className="space-y-2">
-                  <FormLabel>בחר מיקום במפה</FormLabel>
+                  <FormLabel>מיקום במפה</FormLabel>
                   <div 
                     ref={mapContainer} 
                     className="w-full h-[300px] rounded-lg border"
                   />
                   <FormDescription>
-                    לחץ על המפה כדי לסמן את מיקום הגניבה המדויק
+                    המפה תתעדכן אוטומטית לפי הכתובת שבחרת
                   </FormDescription>
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
@@ -527,10 +631,11 @@ export default function ReportTheftPage() {
         </div>
       </div>
       
-      <MobileNavigation />
+      <MobileNavigation activeRoute={location} />
       <MobileMenu 
         isOpen={isMobileMenuOpen} 
-        onClose={() => setIsMobileMenuOpen(false)} 
+        onClose={() => setIsMobileMenuOpen(false)}
+        activeRoute={location}
       />
     </div>
   );

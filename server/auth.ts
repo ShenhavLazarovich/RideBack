@@ -81,13 +81,28 @@ export function setupAuth(app: Express) {
     maxAge: sessionSettings.cookie?.maxAge,
     secure: sessionSettings.cookie?.secure,
     sameSite: sessionSettings.cookie?.sameSite,
-    httpOnly: sessionSettings.cookie?.httpOnly
+    httpOnly: sessionSettings.cookie?.httpOnly,
+    path: sessionSettings.cookie?.path
   }));
 
   app.set("trust proxy", 1);
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Add session debugging middleware
+  app.use((req, res, next) => {
+    if (req.url.startsWith('/api/')) {
+      console.log('Session Debug:', {
+        sessionID: req.sessionID,
+        isAuthenticated: req.isAuthenticated(),
+        hasSession: !!req.session,
+        cookieHeader: req.headers.cookie,
+        user: req.user ? { id: req.user.id, username: req.user.username } : null
+      });
+    }
+    next();
+  });
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {
