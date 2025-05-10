@@ -7,6 +7,8 @@ import { apiRequest } from "@/lib/queryClient";
 // Initialize Mapbox with your token
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
+console.log("Mapbox token:", import.meta.env.VITE_MAPBOX_TOKEN);
+
 interface TheftReport {
   id: number;
   theftDate: string;
@@ -50,6 +52,8 @@ export function TheftMap() {
 
     // Add navigation controls
     map.current.addControl(new mapboxgl.NavigationControl());
+
+    console.log("Map initialized", map.current);
 
     return () => {
       map.current?.remove();
