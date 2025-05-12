@@ -181,8 +181,7 @@ export default function SearchPage() {
           <div className="max-w-4xl mx-auto">
             <h2 className="text-2xl font-bold mb-6">חיפוש אופניים</h2>
             
-            {/* Search Form */}
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="bg-card rounded-lg shadow p-6 border border-border mb-6">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <div className="flex flex-col md:flex-row gap-4">

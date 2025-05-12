@@ -57,7 +57,9 @@ async function seed() {
         serialNumber: "WTU123456789",
         additionalInfo: "מדבקה של חנות אופניים בתל אביב על השלדה",
         imageUrl: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
-        status: "stolen"
+        status: "stolen",
+        cashReward: 500,
+        photoUrl: "https://example.com/bike1.jpg"
       }).returning();
       
       // Create theft report for bike 1
@@ -87,7 +89,9 @@ async function seed() {
         serialNumber: "SPD987654321",
         additionalInfo: "שיכוך קדמי Fox, אוכף מותאם אישית",
         imageUrl: "https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
-        status: "registered"
+        status: "registered",
+        cashReward: 300,
+        photoUrl: "https://example.com/bike2.jpg"
       });
     }
     
@@ -171,7 +175,9 @@ async function seed() {
         frameSize: "M",
         serialNumber: "CN12349876",
         imageUrl: "https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
-        status: "stolen"
+        status: "stolen",
+        cashReward: 400,
+        photoUrl: "https://example.com/search-bike1.jpg"
       }).returning();
       
       await db.insert(schema.bikeReports).values({
@@ -196,7 +202,9 @@ async function seed() {
         frameSize: "S",
         serialNumber: "GI87655432",
         imageUrl: "https://images.unsplash.com/photo-1593764592116-bfb2a97c642a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600",
-        status: "found"
+        status: "found",
+        cashReward: 200,
+        photoUrl: "https://example.com/search-bike2.jpg"
       }).returning();
       
       await db.insert(schema.bikeReports).values({
@@ -221,7 +229,9 @@ async function seed() {
           color: "לבן/שחור",
           frameSize: "L",
           serialNumber: "SC12345678",
-          status: "stolen"
+          status: "stolen",
+          cashReward: 350,
+          photoUrl: "https://example.com/scott-addict.jpg"
         },
         {
           userId: searchUser.id,
@@ -232,7 +242,9 @@ async function seed() {
           color: "כחול/צהוב",
           frameSize: "M",
           serialNumber: "TR98765432",
-          status: "stolen"
+          status: "stolen",
+          cashReward: 450,
+          photoUrl: "https://example.com/trek-fuel.jpg"
         },
         {
           userId: searchUser.id,
@@ -243,7 +255,9 @@ async function seed() {
           color: "אפור",
           frameSize: "M/L",
           serialNumber: "SP56781234",
-          status: "stolen"
+          status: "stolen",
+          cashReward: 400,
+          photoUrl: "https://example.com/specialized-diverge.jpg"
         }
       ]);
     }

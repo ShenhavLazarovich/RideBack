@@ -33,6 +33,8 @@ export const bikes = pgTable("bikes", {
   additionalInfo: text("additional_info"),
   imageUrl: text("image_url"),
   status: text("status").default("registered").notNull(), // registered, stolen, found
+  cashReward: integer("cash_reward"),
+  photoUrl: text("photo_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

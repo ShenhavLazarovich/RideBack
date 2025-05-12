@@ -196,245 +196,79 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row">
-      {/* Hero section - takes full width on mobile, half on desktop */}
-      <div className="md:w-1/2 bg-primary p-8 text-white flex flex-col justify-center items-center md:fixed md:right-0 md:top-0 md:bottom-0">
-        <div className="max-w-md mx-auto text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">ברוך הבא ל-RideBack</h1>
-          <p className="text-lg mb-6">האפליקציה שתעזור לך לרשום, לדווח ולמצוא אופניים גנובים</p>
-          
-          <div className="space-y-6">
-            <div className="flex items-start">
-              <div className="bg-white bg-opacity-20 rounded-full p-3 ml-4">
-                <i className="fas fa-bicycle text-xl"></i>
-              </div>
-              <div className="text-right">
-                <h3 className="font-bold mb-1">רישום אופניים</h3>
-                <p className="text-sm opacity-80">שמור פרטים מזהים של האופניים שלך למקרה של גניבה</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start">
-              <div className="bg-white bg-opacity-20 rounded-full p-3 ml-4">
-                <i className="fas fa-exclamation-triangle text-xl"></i>
-              </div>
-              <div className="text-right">
-                <h3 className="font-bold mb-1">דיווח על גניבה</h3>
-                <p className="text-sm opacity-80">דווח על גניבת אופניים ושתף את המידע עם הקהילה</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start">
-              <div className="bg-white bg-opacity-20 rounded-full p-3 ml-4">
-                <i className="fas fa-search text-xl"></i>
-              </div>
-              <div className="text-right">
-                <h3 className="font-bold mb-1">חיפוש אופניים</h3>
-                <p className="text-sm opacity-80">חפש אופניים גנובים או אבודים במאגר המידע שלנו</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Auth forms - takes full width on mobile, half on desktop */}
-      <div className="md:w-1/2 md:fixed md:left-0 p-4 md:p-8 flex items-center justify-center">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">
-              {activeTab === "login" ? "התחברות" : "הרשמה"}
-            </CardTitle>
-            <CardDescription className="text-center">
-              {activeTab === "login" 
-                ? "התחבר כדי לנהל את האופניים שלך ולחפש במאגר" 
-                : "צור חשבון חדש כדי להתחיל להשתמש באפליקציה"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs 
-              defaultValue="login" 
-              value={activeTab} 
-              onValueChange={setActiveTab}
-              className="w-full"
-            >
-              <TabsList className="grid grid-cols-2 mb-6">
-                <TabsTrigger value="login">התחברות</TabsTrigger>
-                <TabsTrigger value="register">הרשמה</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                    <FormField
-                      control={loginForm.control}
-                      name="username"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>שם משתמש</FormLabel>
-                          <FormControl>
-                            <Input {...field} autoComplete="username" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={loginForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>סיסמה</FormLabel>
-                          <FormControl>
-                            <Input type="password" {...field} autoComplete="current-password" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={loginMutation.isPending}
-                    >
-                      {loginMutation.isPending ? "מתחבר..." : "התחבר"}
-                    </Button>
-                  </form>
-                </Form>
-                
-                <div className="my-4 flex items-center">
-                  <Separator className="flex-1" />
-                  <span className="mx-2 text-sm text-muted-foreground">או</span>
-                  <Separator className="flex-1" />
-                </div>
-                
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full flex items-center justify-center gap-2 mb-2"
-                  onClick={handleGoogleSignIn}
-                  disabled={isGoogleLoading}
-                >
-                  {isGoogleLoading ? (
-                    <>
-                      <span className="animate-spin mr-2">◌</span>
-                      <span>מתחבר...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FcGoogle className="w-5 h-5" />
-                      <span>התחבר עם Google</span>
-                    </>
-                  )}
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-md mx-auto shadow-lg border border-border">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold mb-2">ברוך הבא ל-RideBack</CardTitle>
+          <CardDescription className="text-muted-foreground mb-4">התחבר או הירשם כדי להמשיך</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="mb-4">
+            <TabsList className="grid grid-cols-2 w-full mb-4">
+              <TabsTrigger value="login">התחברות</TabsTrigger>
+              <TabsTrigger value="register">הרשמה</TabsTrigger>
+            </TabsList>
+            <TabsContent value="login">
+              <Form {...loginForm}>
+                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                  <FormField control={loginForm.control} name="username" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>שם משתמש</FormLabel>
+                      <FormControl><Input {...field} autoFocus /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={loginForm.control} name="password" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>סיסמה</FormLabel>
+                      <FormControl><Input type="password" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <Button type="submit" className="w-full bg-primary text-primary-foreground">התחבר</Button>
+                </form>
+              </Form>
+              <div className="flex flex-col gap-2 mt-4">
+                <Button variant="outline" className="w-full flex items-center justify-center gap-2" onClick={handleGoogleSignIn} disabled={isGoogleLoading}>
+                  <FcGoogle className="text-xl" />
+                  התחבר עם Google
                 </Button>
-                
-                {/* Test login button for debugging */}
-                <Button 
-                  type="button" 
-                  variant="secondary" 
-                  className="w-full flex items-center justify-center gap-2"
-                  onClick={loginAsDemo}
-                  disabled={isTestLoginLoading}
-                >
-                  {isTestLoginLoading ? (
-                    <>
-                      <span className="animate-spin mr-2">◌</span>
-                      <span>מתחבר...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>התחבר כמשתמש לדוגמה</span>
-                    </>
-                  )}
+                <Button variant="ghost" className="w-full text-xs text-muted-foreground" onClick={loginAsDemo} disabled={isTestLoginLoading}>
+                  התחבר כמשתמש הדגמה
                 </Button>
-              </TabsContent>
-              
-              <TabsContent value="register">
-                <Form {...registerForm}>
-                  <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                    <FormField
-                      control={registerForm.control}
-                      name="username"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>שם משתמש</FormLabel>
-                          <FormControl>
-                            <Input {...field} autoComplete="username" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={registerForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>סיסמה</FormLabel>
-                          <FormControl>
-                            <Input type="password" {...field} autoComplete="new-password" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={registerForm.control}
-                      name="confirmPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>אימות סיסמה</FormLabel>
-                          <FormControl>
-                            <Input type="password" {...field} autoComplete="new-password" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={registerMutation.isPending}
-                    >
-                      {registerMutation.isPending ? "נרשם..." : "הירשם"}
-                    </Button>
-                  </form>
-                </Form>
-                
-                <div className="my-4 flex items-center">
-                  <Separator className="flex-1" />
-                  <span className="mx-2 text-sm text-muted-foreground">או</span>
-                  <Separator className="flex-1" />
-                </div>
-                
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full flex items-center justify-center gap-2"
-                  onClick={handleGoogleSignIn}
-                  disabled={isGoogleLoading}
-                >
-                  {isGoogleLoading ? (
-                    <>
-                      <span className="animate-spin mr-2">◌</span>
-                      <span>מתחבר...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FcGoogle className="w-5 h-5" />
-                      <span>הירשם עם Google</span>
-                    </>
-                  )}
-                </Button>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="register">
+              <Form {...registerForm}>
+                <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                  <FormField control={registerForm.control} name="username" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>שם משתמש</FormLabel>
+                      <FormControl><Input {...field} autoFocus /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={registerForm.control} name="password" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>סיסמה</FormLabel>
+                      <FormControl><Input type="password" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={registerForm.control} name="confirmPassword" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>אימות סיסמה</FormLabel>
+                      <FormControl><Input type="password" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <Button type="submit" className="w-full bg-primary text-primary-foreground">הרשם</Button>
+                </form>
+              </Form>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }

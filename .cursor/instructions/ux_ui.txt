@@ -1,0 +1,18 @@
+Home Screen:
+Displays a live feed of new listings and a map of local theft reports side by side.
+
+Report Theft:
+Simple form with fields for uploading photos, entering location and description, and setting a cash reward.
+
+Theft Registered Confirmation:
+After submission, users receive a confirmation screen with a success message and further action options.
+
+Menu and Navigation:
+
+Profile and user dashboard
+
+My reports
+
+Notifications and saved listings
+
+Settings and help

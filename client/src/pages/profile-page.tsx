@@ -55,20 +55,22 @@ export default function ProfilePage() {
   const { toast } = useToast();
 
   // Fetch user's profile data
-  const { data: profileData, isLoading: loadingProfile } = useQuery({
-    queryKey: ["/api/profile"],
-    enabled: !!user,
-  });
+  const { data: profileData, isLoading: loadingProfile } = useQuery<Partial<ProfileFormValues> & { bikesCount?: number; activeTheftReportsCount?: number; }>(
+    {
+      queryKey: ["/api/profile"],
+      enabled: !!user,
+    }
+  );
 
   // Initialize profile form
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      username: profileData?.username || user?.username || "",
-      email: profileData?.email || "",
-      phone: profileData?.phone || "",
-      firstName: profileData?.firstName || "",
-      lastName: profileData?.lastName || "",
+      username: (profileData?.username ?? user?.username ?? ""),
+      email: (profileData?.email ?? ""),
+      phone: (profileData?.phone ?? ""),
+      firstName: (profileData?.firstName ?? ""),
+      lastName: (profileData?.lastName ?? ""),
     },
   });
 
@@ -76,11 +78,11 @@ export default function ProfilePage() {
   React.useEffect(() => {
     if (profileData) {
       profileForm.reset({
-        username: profileData.username,
-        email: profileData.email || "",
-        phone: profileData.phone || "",
-        firstName: profileData.firstName || "",
-        lastName: profileData.lastName || "",
+        username: (profileData.username ?? ""),
+        email: (profileData.email ?? ""),
+        phone: (profileData.phone ?? ""),
+        firstName: (profileData.firstName ?? ""),
+        lastName: (profileData.lastName ?? ""),
       });
     }
   }, [profileData, profileForm]);
@@ -173,15 +175,15 @@ export default function ProfilePage() {
                 <p className="mt-2 text-muted-foreground">טוען פרטי פרופיל...</p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {/* Profile Summary Card */}
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle>פרטי משתמש</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center">
-                      <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white text-2xl mr-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white text-2xl">
                         <span>{user?.username?.substring(0, 2) || "מש"}</span>
                       </div>
                       <div>
@@ -200,117 +202,66 @@ export default function ProfilePage() {
                       </div>
                       <div>
                         <span className="text-muted-foreground">דיווחי גניבה פעילים:</span>
-                        <span className="font-medium text-destructive"> {profileData?.activeTheftReportsCount || 0}</span>
+                        <span className="font-medium"> {profileData?.activeTheftReportsCount || 0}</span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
                 
-                {/* Edit Profile Form */}
+                {/* Profile Edit Form */}
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle>עריכת פרופיל</CardTitle>
+                    <CardTitle>עריכת פרטי פרופיל</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Form {...profileForm}>
                       <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
-                        <FormField
-                          control={profileForm.control}
-                          name="username"
-                          render={({ field }) => (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField control={profileForm.control} name="username" render={({ field }) => (
                             <FormItem>
                               <FormLabel>שם משתמש</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
+                              <FormControl><Input {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
-                          )}
-                        />
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <FormField
-                            control={profileForm.control}
-                            name="firstName"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>שם פרטי</FormLabel>
-                                <FormControl>
-                                  <Input {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={profileForm.control}
-                            name="lastName"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>שם משפחה</FormLabel>
-                                <FormControl>
-                                  <Input {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                          )} />
+                          <FormField control={profileForm.control} name="email" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>אימייל</FormLabel>
+                              <FormControl><Input {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={profileForm.control} name="phone" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>טלפון</FormLabel>
+                              <FormControl><Input {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={profileForm.control} name="firstName" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>שם פרטי</FormLabel>
+                              <FormControl><Input {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={profileForm.control} name="lastName" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>שם משפחה</FormLabel>
+                              <FormControl><Input {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
                         </div>
-                        
-                        <Separator className="my-4" />
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <FormField
-                            control={profileForm.control}
-                            name="email"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>אימייל</FormLabel>
-                                <FormControl>
-                                  <Input type="email" {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                  משמש להתראות ויצירת קשר לגבי האופניים שלך
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={profileForm.control}
-                            name="phone"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>טלפון</FormLabel>
-                                <FormControl>
-                                  <Input type="tel" {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                  יוצג רק לחברים בעת דיווח על גניבה
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                        
-                        <div className="flex justify-end mt-4">
-                          <Button 
-                            type="submit" 
-                            className="bg-primary" 
-                            disabled={updateProfileMutation.isPending}
-                          >
-                            {updateProfileMutation.isPending ? "מעדכן פרטים..." : "שמור שינויים"}
-                          </Button>
+                        <div className="flex justify-end">
+                          <Button type="submit" className="bg-primary">עדכן פרופיל</Button>
                         </div>
                       </form>
                     </Form>
                   </CardContent>
                 </Card>
                 
-                {/* Change Password Form */}
+                {/* Password Change Form */}
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle>שינוי סיסמה</CardTitle>
@@ -318,61 +269,31 @@ export default function ProfilePage() {
                   <CardContent>
                     <Form {...passwordForm}>
                       <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
-                        <FormField
-                          control={passwordForm.control}
-                          name="currentPassword"
-                          render={({ field }) => (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <FormField control={passwordForm.control} name="currentPassword" render={({ field }) => (
                             <FormItem>
                               <FormLabel>סיסמה נוכחית</FormLabel>
-                              <FormControl>
-                                <Input type="password" {...field} />
-                              </FormControl>
+                              <FormControl><Input type="password" {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
-                          )}
-                        />
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <FormField
-                            control={passwordForm.control}
-                            name="newPassword"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>סיסמה חדשה</FormLabel>
-                                <FormControl>
-                                  <Input type="password" {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                  לפחות 6 תווים
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={passwordForm.control}
-                            name="confirmNewPassword"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>אימות סיסמה חדשה</FormLabel>
-                                <FormControl>
-                                  <Input type="password" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                          )} />
+                          <FormField control={passwordForm.control} name="newPassword" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>סיסמה חדשה</FormLabel>
+                              <FormControl><Input type="password" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={passwordForm.control} name="confirmNewPassword" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>אישור סיסמה חדשה</FormLabel>
+                              <FormControl><Input type="password" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
                         </div>
-                        
-                        <div className="flex justify-end mt-4">
-                          <Button 
-                            type="submit" 
-                            className="bg-primary" 
-                            disabled={changePasswordMutation.isPending}
-                          >
-                            {changePasswordMutation.isPending ? "מעדכן סיסמה..." : "שנה סיסמה"}
-                          </Button>
+                        <div className="flex justify-end">
+                          <Button type="submit" className="bg-primary">שנה סיסמה</Button>
                         </div>
                       </form>
                     </Form>

@@ -106,6 +106,16 @@ export default function RegisterBikePage() {
     navigate("/");
   };
   
+  // Helper to check if required fields are filled
+  const requiredFieldsFilled =
+    form.watch("brand") &&
+    form.watch("model") &&
+    form.watch("type") &&
+    form.watch("year") &&
+    form.watch("color") &&
+    form.watch("serialNumber") &&
+    !registerBikeMutation.isPending;
+  
   return (
     <>
       <MobileHeader 
@@ -122,13 +132,12 @@ export default function RegisterBikePage() {
       
       <main className="pt-16 md:pt-0 md:pr-64 min-h-screen pb-20 md:pb-0">
         <section className="p-4 md:p-8">
-          <div className="max-w-2xl mx-auto">
+          <div className="w-full">
             <h2 className="text-2xl font-bold mb-6">רישום אופניים חדשים</h2>
             
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-card rounded-lg shadow p-6 md:p-8 border border-border">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  {/* Basic Info */}
                   <h3 className="text-lg font-bold mb-4">פרטי האופניים</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -219,9 +228,26 @@ export default function RegisterBikePage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>צבע</FormLabel>
-                          <FormControl>
-                            <Input placeholder="שחור, אדום, כחול וכו׳" {...field} />
-                          </FormControl>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="בחר צבע" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="black">שחור</SelectItem>
+                              <SelectItem value="white">לבן</SelectItem>
+                              <SelectItem value="red">אדום</SelectItem>
+                              <SelectItem value="blue">כחול</SelectItem>
+                              <SelectItem value="green">ירוק</SelectItem>
+                              <SelectItem value="yellow">צהוב</SelectItem>
+                              <SelectItem value="gray">אפור</SelectItem>
+                              <SelectItem value="other">אחר</SelectItem>
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -242,7 +268,6 @@ export default function RegisterBikePage() {
                     />
                   </div>
                   
-                  {/* Serial Number */}
                   <h3 className="text-lg font-bold mb-4">מספר שלדה (מספר סידורי)</h3>
                   <FormField
                     control={form.control}
@@ -267,17 +292,18 @@ export default function RegisterBikePage() {
                     )}
                   />
                   
-                  {/* Photos */}
-                  <h3 className="text-lg font-bold mb-4">תמונות</h3>
-                  <FileUpload 
-                    onChange={handleImageChange}
-                    value={bikeImages}
-                    maxFiles={5}
-                    maxSizeMB={5}
-                    accept="image/jpeg,image/png"
-                  />
+                  <div>
+                    <FormLabel>העלה תמונות (אופציונלי)</FormLabel>
+                    <FileUpload onChange={handleImageChange} value={bikeImages} maxFiles={5} maxSizeMB={5} accept="image/*" />
+                    {bikeImages.length > 0 && (
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        {bikeImages.map((file, idx) => (
+                          <span key={idx} className="text-xs bg-gray-100 rounded px-2 py-1">{file.name}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   
-                  {/* Additional Info */}
                   <h3 className="text-lg font-bold mb-4">פרטים נוספים</h3>
                   <FormField
                     control={form.control}
@@ -298,23 +324,9 @@ export default function RegisterBikePage() {
                     )}
                   />
                   
-                  {/* Submit */}
-                  <div className="mt-8 flex flex-col md:flex-row md:items-center md:justify-between">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={handleCancel}
-                      className="order-2 md:order-1 mt-4 md:mt-0"
-                    >
-                      בטל
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="order-1 md:order-2 bg-primary text-white w-full md:w-auto"
-                      disabled={registerBikeMutation.isPending}
-                    >
-                      {registerBikeMutation.isPending ? "רושם אופניים..." : "רשום אופניים"}
-                    </Button>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="ghost" onClick={handleCancel}>ביטול</Button>
+                    <Button type="submit" className="bg-primary text-primary-foreground" disabled={!requiredFieldsFilled}>רשום אופניים</Button>
                   </div>
                 </form>
               </Form>

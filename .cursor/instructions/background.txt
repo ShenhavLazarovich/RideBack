@@ -1,0 +1,51 @@
+RideBack is a community-powered app designed to help users locate and recover stolen bicycles and electric scooters. It connects riders, local communities, and enforcement authorities to increase the chances of recovery and deter theft.
+Target Audience:Urban cyclists and e-scooter riders,Bike shops and second-hand sellers,Local law enforcement and municipal authorities
+Key Features
+
+1. Theft Reporting
+
+Users can report a stolen bike or scooter with photos, description, last known location, and an optional cash reward.
+
+Each report is added to a shared map and alerts local users.
+
+
+
+2. Marketplace Monitoring
+
+The app displays listings of new bicycles and e-scooters posted on platforms like Facebook Marketplace.
+
+Users can search for suspicious listings and flag them for review.
+
+
+
+3. Interactive Map
+
+A dynamic map shows all reported thefts and allows users to filter by:
+
+Vehicle type (bike/scooter)
+
+Reward amount
+
+Location
+
+Date of theft
+
+
+Clicking on a report opens full details, images, and the option to contact the owner.
+
+
+
+4. Community Alerts and Messaging
+
+Suspicious listings can be linked to reports.
+
+The app offers built-in messaging or external links (like WhatsApp) to contact sellers or the bike owner.
+
+
+
+5. Gamification and Rewards
+
+Users who help match stolen items with listings earn achievement badges.
+
+Cash rewards offered by theft victims serve as extra motivation.
+

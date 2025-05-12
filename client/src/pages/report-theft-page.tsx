@@ -50,20 +50,14 @@ async function searchAddress(query: string) {
   }
 }
 
-// Form schema for theft report
+// Updated form schema
 const theftReportSchema = z.object({
   bikeId: z.coerce.number().min(1, { message: "יש לבחור אופניים" }),
   theftDate: z.string().min(1, { message: "יש להזין תאריך גניבה" }),
   theftLocation: z.string().min(1, { message: "יש להזין מיקום גניבה" }),
   theftDetails: z.string().optional(),
-  policeReported: z.boolean().default(false),
-  policeStation: z.string().optional(),
-  policeFileNumber: z.string().optional(),
-  useProfileContact: z.boolean().default(true),
-  contactName: z.string().optional(),
-  contactPhone: z.string().optional(),
-  contactEmail: z.string().email({ message: "כתובת דוא\"ל לא תקינה" }).optional(),
-  visibility: z.enum(["public", "private"]).default("public"),
+  reward: z.coerce.number().min(0).default(0),
+  photos: z.any().optional(),
   latitude: z.string().min(1, { message: "יש לבחור מיקום במפה" }),
   longitude: z.string().min(1, { message: "יש לבחור מיקום במפה" }),
 });
@@ -80,8 +74,10 @@ export default function ReportTheftPage() {
   const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeout = useRef<NodeJS.Timeout>();
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
   
-  // Fetch user's registered bikes that are not already reported as stolen
+  // Fetch user's registered bikes
   const { data: bikes = [], isLoading: loadingBikes } = useQuery<Bike[]>({
     queryKey: ["/api/bikes/available"],
   });
@@ -94,23 +90,12 @@ export default function ReportTheftPage() {
       theftDate: new Date().toISOString().split('T')[0],
       theftLocation: "",
       theftDetails: "",
-      policeReported: false,
-      policeStation: "",
-      policeFileNumber: "",
-      useProfileContact: true,
-      contactName: user?.username || "",
-      contactPhone: "",
-      contactEmail: "",
-      visibility: "public",
+      reward: 0,
       latitude: "",
       longitude: "",
     },
   });
   
-  // Watch form fields for conditional rendering
-  const policeReported = form.watch("policeReported");
-  const useProfileContact = form.watch("useProfileContact");
-
   // Initialize map
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -126,21 +111,24 @@ export default function ReportTheftPage() {
     map.current.addControl(new mapboxgl.NavigationControl());
 
     // Add click handler to place marker
-    map.current.on('click', (e) => {
+    map.current.on('click', async (e) => {
       const { lng, lat } = e.lngLat;
-      
-      // Update form values
       form.setValue('latitude', lat.toString());
       form.setValue('longitude', lng.toString());
-      
-      // Update marker
-      if (marker.current) {
-        marker.current.remove();
+      if (marker.current) marker.current.remove();
+      marker.current = new mapboxgl.Marker().setLngLat([lng, lat]).addTo(map.current!);
+      // Reverse geocode to get address
+      try {
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxToken}&language=he`
+        );
+        const data = await response.json();
+        if (data.features && data.features.length > 0) {
+          form.setValue('theftLocation', data.features[0].place_name);
+        }
+      } catch (err) {
+        // Optionally handle error
       }
-      
-      marker.current = new mapboxgl.Marker()
-        .setLngLat([lng, lat])
-        .addTo(map.current!);
     });
 
     return () => {
@@ -154,30 +142,51 @@ export default function ReportTheftPage() {
   // Report theft mutation
   const reportTheftMutation = useMutation({
     mutationFn: async (data: TheftReportFormValues) => {
-      const res = await apiRequest("POST", "/api/reports", {
-        ...data,
+      // Final check for required fields
+      if (!data.bikeId || !data.theftDate || !data.theftLocation || !data.latitude || !data.longitude) {
+        throw new Error("יש למלא את כל השדות החיוניים");
+      }
+
+      // Create the request body
+      const requestBody = {
+        bikeId: Number(data.bikeId),
         theftDate: new Date(data.theftDate).toISOString(),
-        status: "active"
+        theftLocation: data.theftLocation,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        theftDetails: data.theftDetails || undefined,
+        reward: data.reward || undefined
+      };
+
+      // Debug: log the request body
+      console.log('Request body:', requestBody);
+
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+        credentials: "include",
       });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText);
+      }
       return await res.json();
     },
     onSuccess: () => {
-      console.log("onSettled called 1");
+      setShowConfirmation(true);
       queryClient.invalidateQueries({ queryKey: ["/api/bikes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
-      console.log("onSettled called 2");
     },
     onError: (error) => {
-      console.error("Error submitting theft report:", error);
+      alert("שגיאה בשליחת הדיווח: " + error);
     },
-    onSettled: () => {
-      console.log("onSettled called, navigating to main page");
-      window.location.href = "/";
-    }
   });
   
   const onSubmit = (data: TheftReportFormValues) => {
-    console.log("onSubmit called with data:", data);
     reportTheftMutation.mutate(data);
   };
   
@@ -230,413 +239,151 @@ export default function ReportTheftPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      <MobileHeader 
-        title="דיווח על גניבה" 
-        toggleMobileMenu={() => setIsMobileMenuOpen(true)} 
-      />
-      
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">דיווח על גניבת אופניים</h1>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              {/* Bike Selection */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-bold">בחירת אופניים</h3>
-                
-                {loadingBikes ? (
-                  <div className="text-center py-4">
-                    <i className="fas fa-spinner fa-spin text-primary text-2xl"></i>
-                    <p className="mt-2 text-muted-foreground">טוען רשימת אופניים...</p>
-                  </div>
-                ) : bikes.length === 0 ? (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">אין לך אופניים רשומים</p>
-                    <Link href="/register-bike">
-                      <Button variant="link" className="mt-2">
-                        הוסף אופניים חדשים
-                      </Button>
-                    </Link>
-                  </div>
-                ) : (
-                  <FormField
-                    control={form.control}
-                    name="bikeId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="space-y-3">
-                          {bikes.map((bike) => (
-                            <div key={bike.id} className="flex items-center">
-                              <FormControl>
-                                <RadioGroup
-                                  onValueChange={(value) => field.onChange(parseInt(value))}
-                                  defaultValue={field.value.toString()}
-                                  className="flex flex-col space-y-1"
-                                >
-                                  <FormControl>
-                                    <RadioGroupItem value={bike.id.toString()} className="ml-3" />
-                                  </FormControl>
-                                  <div className="flex items-center flex-1">
-                                    <div className="w-14 h-14 bg-muted rounded overflow-hidden ml-3">
-                                      {bike.imageUrl ? (
-                                        <img 
-                                          src={bike.imageUrl} 
-                                          alt={`${bike.brand} ${bike.model}`} 
-                                          className="w-full h-full object-cover"
-                                        />
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center">
-                                          <i className="fas fa-bicycle text-muted-foreground text-2xl"></i>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div>
-                                      <p className="font-medium">{bike.brand} {bike.model}</p>
-                                      <p className="text-sm text-muted-foreground">
-                                        {bike.type === "road" ? "אופניי כביש" : 
-                                         bike.type === "mountain" ? "אופני הרים" : 
-                                         bike.type === "electric" ? "אופניים חשמליים" : "אחר"} | {bike.color} | {bike.year}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </RadioGroup>
-                              </FormControl>
-                            </div>
-                          ))}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-              </div>
-              
-              {/* Theft Details */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-bold">פרטי הגניבה</h3>
-                
-                <FormField
-                  control={form.control}
-                  name="theftDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>תאריך הגניבה</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="theftLocation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>מיקום הגניבה</FormLabel>
-                      <div className="relative">
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="הקלד כתובת או מקום..."
-                            onChange={(e) => {
-                              field.onChange(e);
-                              handleAddressSearch(e.target.value);
-                            }}
-                          />
-                        </FormControl>
-                        {isSearching && (
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                            <i className="fas fa-spinner fa-spin text-muted-foreground"></i>
-                          </div>
-                        )}
-                        {addressSuggestions.length > 0 && (
-                          <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border">
-                            {addressSuggestions.map((suggestion) => (
-                              <button
-                                key={suggestion.id}
-                                type="button"
-                                className="w-full text-right px-4 py-2 hover:bg-muted cursor-pointer"
-                                onClick={() => handleAddressSelect(suggestion)}
-                              >
-                                {suggestion.place_name}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <FormDescription>
-                        הקלד כתובת או מקום והמפה תתעדכן אוטומטית
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+  // Helper to check if required fields are filled
+  const requiredFieldsFilled =
+    form.watch("bikeId") &&
+    form.watch("bikeId") !== 0 &&
+    form.watch("theftDate") &&
+    form.watch("theftLocation") &&
+    form.watch("latitude") &&
+    form.watch("longitude");
 
-                {/* Map Picker */}
-                <div className="space-y-2">
-                  <FormLabel>מיקום במפה</FormLabel>
-                  <div 
-                    ref={mapContainer} 
-                    className="w-full h-[300px] rounded-lg border"
-                  />
-                  <FormDescription>
-                    המפה תתעדכן אוטומטית לפי הכתובת שבחרת
-                  </FormDescription>
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="latitude"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>קו רוחב</FormLabel>
-                          <FormControl>
-                            <Input {...field} readOnly />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="longitude"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>קו אורך</FormLabel>
-                          <FormControl>
-                            <Input {...field} readOnly />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="theftDetails"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>פרטים נוספים</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          {...field} 
-                          placeholder="תאר את הנסיבות, האם האופניים היו נעולים, האם יש עדים וכו'"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              {/* Police Report */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-bold">דיווח למשטרה</h3>
-                
-                <FormField
-                  control={form.control}
-                  name="policeReported"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>
-                          דיווחתי למשטרה על הגניבה
-                        </FormLabel>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-                
-                {policeReported && (
-                  <>
-                    <FormField
-                      control={form.control}
-                      name="policeStation"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>תחנת משטרה</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="לדוגמה: תחנת תל אביב צפון" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="policeFileNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>מספר תיק</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="לדוגמה: 20230412-123" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </>
-                )}
-              </div>
-              
-              {/* Contact Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-bold">פרטי התקשרות</h3>
-                
-                <FormField
-                  control={form.control}
-                  name="useProfileContact"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>
-                          השתמש בפרטי ההתקשרות שלי מהפרופיל
-                        </FormLabel>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-                
-                {!useProfileContact && (
-                  <>
-                    <FormField
-                      control={form.control}
-                      name="contactName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>שם מלא</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="contactPhone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>טלפון</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="tel" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="contactEmail"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>דוא"ל</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="email" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </>
-                )}
-              </div>
-              
-              {/* Visibility */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-bold">הגדרות פרטיות</h3>
-                
-                <FormField
-                  control={form.control}
-                  name="visibility"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>חשיפת הדיווח</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex flex-col space-y-1"
-                        >
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="public" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              פומבי - כל המשתמשים יוכלו לראות את הדיווח
-                            </FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="private" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              פרטי - רק אתה תוכל לראות את הדיווח
-                            </FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              {/* Submit Buttons */}
-              <div className="flex justify-end space-x-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancel}
-                >
-                  ביטול
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={reportTheftMutation.isPending}
-                >
-                  {reportTheftMutation.isPending ? (
-                    <>
-                      <i className="fas fa-spinner fa-spin ml-2"></i>
-                      שולח...
-                    </>
-                  ) : (
-                    "שלח דיווח"
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Form>
+  if (showConfirmation) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="bg-white p-8 rounded shadow text-center">
+          <h2 className="text-2xl font-bold mb-4">הדיווח נשלח בהצלחה!</h2>
+          <p className="mb-4">תודה על הדיווח. תוכל לעקוב אחרי סטטוס הדיווח שלך בלוח הבקרה.</p>
+          <Button onClick={() => navigate("/")}>חזור לדף הבית</Button>
         </div>
       </div>
-      
-      <MobileNavigation activeRoute={location} />
-      <MobileMenu 
-        isOpen={isMobileMenuOpen} 
-        onClose={() => setIsMobileMenuOpen(false)}
-        activeRoute={location}
-      />
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      <DesktopSidebar activeRoute={location} />
+      <main className="pt-16 md:pt-0 md:pr-64 min-h-screen pb-20 md:pb-0">
+        <section className="p-4 md:p-8">
+          <div className="max-w-xl mx-auto">
+            <h1 className="text-2xl font-bold mb-6">דיווח על גניבת אופניים/קורקינט</h1>
+            <div className="bg-card rounded-lg shadow p-6 border border-border">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  {/* Bike selection */}
+                  <div>
+                    <label className="block font-medium mb-1">בחר אופניים <span className="text-red-500">*</span></label>
+                    <select {...form.register("bikeId", { required: true, valueAsNumber: true })} className="w-full border rounded p-2">
+                      <option value={0}>בחר אופניים</option>
+                      {bikes.map((bike: Bike) => (
+                        <option key={bike.id} value={bike.id}>{bike.brand} {bike.model}</option>
+                      ))}
+                    </select>
+                    {form.formState.errors.bikeId && (
+                      <div className="text-red-500 text-xs mt-1">יש לבחור אופניים</div>
+                    )}
+                  </div>
+                  {/* Date */}
+                  <div>
+                    <label className="block font-medium mb-1">תאריך הגניבה <span className="text-red-500">*</span></label>
+                    <Input type="date" {...form.register("theftDate", { required: true })} />
+                    {form.formState.errors.theftDate && (
+                      <div className="text-red-500 text-xs mt-1">יש להזין תאריך</div>
+                    )}
+                  </div>
+                  {/* Location */}
+                  <div>
+                    <label className="block font-medium mb-1">מיקום הגניבה <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <Input
+                        {...form.register("theftLocation", { required: true })}
+                        placeholder="הקלד כתובת או מקום..."
+                        autoComplete="off"
+                        onChange={async (e) => {
+                          form.setValue("theftLocation", e.target.value);
+                          if (searchTimeout.current) clearTimeout(searchTimeout.current);
+                          const value = e.target.value;
+                          if (!value.trim()) {
+                            setAddressSuggestions([]);
+                            return;
+                          }
+                          searchTimeout.current = setTimeout(async () => {
+                            setIsSearching(true);
+                            const results = await searchAddress(value);
+                            setAddressSuggestions(results);
+                            setIsSearching(false);
+                          }, 300);
+                        }}
+                        value={form.watch("theftLocation")}
+                      />
+                      {isSearching && (
+                        <div className="absolute left-3 top-3">
+                          <i className="fas fa-spinner fa-spin text-muted-foreground"></i>
+                        </div>
+                      )}
+                      {addressSuggestions.length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border max-h-48 overflow-auto">
+                          {addressSuggestions.map((suggestion) => (
+                            <button
+                              key={suggestion.id}
+                              type="button"
+                              className="w-full text-right px-4 py-2 hover:bg-muted cursor-pointer"
+                              onClick={() => {
+                                form.setValue('theftLocation', suggestion.place_name);
+                                form.setValue('latitude', suggestion.center[1].toString());
+                                form.setValue('longitude', suggestion.center[0].toString());
+                                setAddressSuggestions([]);
+                                // Update map marker
+                                if (map.current) {
+                                  map.current.flyTo({ center: suggestion.center, zoom: 15 });
+                                  if (marker.current) marker.current.remove();
+                                  marker.current = new mapboxgl.Marker().setLngLat(suggestion.center).addTo(map.current);
+                                }
+                              }}
+                            >
+                              {suggestion.place_name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {form.formState.errors.theftLocation && (
+                      <div className="text-red-500 text-xs mt-1">יש להזין מיקום</div>
+                    )}
+                    <div ref={mapContainer} className="w-full h-60 rounded border mt-2" />
+                  </div>
+                  {/* Description */}
+                  <div>
+                    <label className="block font-medium mb-1">פרטים נוספים</label>
+                    <Textarea {...form.register("theftDetails")} placeholder="תאר את הנסיבות, האם האופניים היו נעולים, האם יש עדים וכו'" />
+                  </div>
+                  {/* Cash Reward */}
+                  <div>
+                    <label className="block font-medium mb-1">פרס כספי (אופציונלי)</label>
+                    <Input type="number" min={0} {...form.register("reward")} placeholder="הזן סכום פרס" />
+                  </div>
+                  {/* Photo Upload */}
+                  <div>
+                    <label className="block font-medium mb-1">העלה תמונות (אופציונלי)</label>
+                    <Input type="file" multiple accept="image/*" onChange={e => setUploadedPhotos(Array.from(e.target.files || []))} />
+                    {uploadedPhotos.length > 0 && (
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        {uploadedPhotos.map((file, idx) => (
+                          <span key={idx} className="text-xs bg-gray-100 rounded px-2 py-1">{file.name}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="ghost" onClick={handleCancel}>ביטול</Button>
+                    <Button type="submit" className="bg-primary text-primary-foreground" disabled={!requiredFieldsFilled || reportTheftMutation.isPending}>שלח דיווח</Button>
+                  </div>
+                </form>
+              </Form>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }

@@ -165,6 +165,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/reports", ensureAuthenticated, async (req, res, next) => {
     try {
+      // Parse theftDate if it's a string
+      if (typeof req.body.theftDate === "string") {
+        req.body.theftDate = new Date(req.body.theftDate);
+      }
       const validatedData = insertReportSchema.parse(req.body);
       
       // Verify the bike belongs to the user
@@ -177,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newReport = await storage.createTheftReport({
         ...validatedData,
         userId: req.user!.id,
-        status: "active"
+        status: "stolen"
       });
       
       // Update bike status to stolen
