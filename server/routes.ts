@@ -196,6 +196,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update theft report status
+  app.patch("/api/reports/:id/status", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const reportId = parseInt(req.params.id);
+      const { status } = req.body;
+      if (!['stolen', 'closed', 'found'].includes(status)) {
+        return res.status(400).json({ message: "סטטוס לא חוקי" });
+      }
+      // Check user authentication
+      if (!req.user) {
+        return res.status(401).json({ message: "עליך להתחבר כדי לעדכן סטטוס דיווח" });
+      }
+      // Get the report and check ownership
+      const report = await db.query.bikeReports.findFirst({
+        where: eq(bikeReports.id, reportId)
+      });
+      if (!report || report.userId !== req.user.id) {
+        return res.status(404).json({ message: "הדיווח לא נמצא" });
+      }
+      // Update status
+      await db.update(bikeReports).set({ status }).where(eq(bikeReports.id, reportId));
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Alerts
   app.get("/api/alerts", ensureAuthenticated, async (req, res, next) => {
     try {
@@ -484,7 +511,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(bikeReports)
         .leftJoin(bikes, eq(bikeReports.bikeId, bikes.id))
         .where(and(
-          eq(bikeReports.status, "active"),
+          eq(bikeReports.status, "stolen"),
           isNotNull(bikeReports.latitude),
           isNotNull(bikeReports.longitude)
         ))

@@ -14,7 +14,7 @@ export const theftReportSchema = z.object({
   contactPhone: z.string(),
   contactEmail: z.string().email().optional(),
   visibility: z.enum(["public", "private"]).default("public"),
-  status: z.enum(["stolen", "found", "resolved"]).default("stolen"),
+  status: z.enum(["stolen", "closed", "found"]).default("stolen"),
   createdAt: z.date(),
   updatedAt: z.date(),
   latitude: z.string(),

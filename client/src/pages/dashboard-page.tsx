@@ -130,14 +130,27 @@ export default function DashboardPage() {
             <TabsContent value="listings" className="mt-2">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-lg font-semibold">מודעות חדשות</h2>
-                <Button variant="outline" size="sm" className="gap-1">
-                  <i className="fas fa-filter" /> סנן
-                </Button>
               </div>
-              {/* Marketplace Listings Placeholder */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 border rounded bg-white">מודעה לדוגמה 1</div>
-                <div className="p-4 border rounded bg-white">מודעה לדוגמה 2</div>
+              <div className="w-full max-w-2xl mx-auto">
+                <div className="bg-card rounded-lg shadow p-6 border border-border flex flex-col items-center text-center">
+                  <i className="fab fa-facebook text-4xl text-blue-600 mb-4"></i>
+                  <h3 className="text-xl font-bold mb-2">מודעות פייסבוק מרקטפלייס</h3>
+                  <p className="mb-6 text-muted-foreground">
+                    כאן תוכל לצפות במודעות אופניים וקורקינטים למכירה מתוך Facebook Marketplace בישראל. לחיצה על אחד הכפתורים תעביר אותך ישירות לדף הרלוונטי בפייסבוק.
+                  </p>
+                  <div className="flex flex-col md:flex-row gap-4 w-full justify-center">
+                    <a href="https://www.facebook.com/marketplace/105930569439602/bicycles/" target="_blank" rel="noopener noreferrer" className="w-full md:w-auto">
+                      <Button className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white gap-2" size="lg">
+                        <i className="fas fa-bicycle"></i> צפה באופניים למכירה בפייסבוק
+                      </Button>
+                    </a>
+                    <a href="https://www.facebook.com/marketplace/105930569439602/scooters/" target="_blank" rel="noopener noreferrer" className="w-full md:w-auto">
+                      <Button className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white gap-2" size="lg">
+                        <i className="fas fa-motorcycle"></i> צפה בקורקינטים למכירה בפייסבוק
+                      </Button>
+                    </a>
+                  </div>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
