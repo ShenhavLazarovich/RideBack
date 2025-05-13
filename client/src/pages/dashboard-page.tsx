@@ -62,102 +62,95 @@ export default function DashboardPage() {
   const firstName = user ? getFirstName(user.username) : "";
   
   return (
-    <div className="flex min-h-screen bg-background">
+    <>
+      <MobileHeader 
+        title="RideBack" 
+        toggleMobileMenu={() => setIsMobileMenuOpen(true)} 
+      />
       <DesktopSidebar activeRoute={location} />
-      <main className="flex-1">
-        {/* Top Bar */}
-        <div className="flex items-center justify-between border-b p-4">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold">RideBack</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative">
-              <i className="fas fa-bell text-lg" />
-              <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 flex items-center justify-center">
-                {alerts.filter(a => !a.read).length}
-              </Badge>
-            </Button>
-            <Avatar className="h-8 w-8">
-              <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-              <AvatarFallback>{user?.username?.slice(0,2) || "JD"}</AvatarFallback>
-            </Avatar>
-          </div>
-        </div>
-
-        <div className="p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <i className="fas fa-map-marker-alt text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">תל אביב, ישראל</span>
-            </div>
-            <Button onClick={() => navigate("/report")} className="gap-1 bg-red-600 hover:bg-red-700">
-              <i className="fas fa-plus" /> דווח על גניבה
-            </Button>
-          </div>
-          <div className="relative mb-4">
-            <i className="fas fa-search absolute left-3 top-3 text-muted-foreground" />
-            <Input placeholder="חפש אופניים, קורקינטים או מודעות..." className="pl-9" />
-          </div>
-          <Tabs defaultValue="map" className="mb-4" onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="map">מפת גניבות</TabsTrigger>
-              <TabsTrigger value="listings">לוח מודעות</TabsTrigger>
-            </TabsList>
-            <TabsContent value="map" className="mt-2">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-semibold">דיווחים אחרונים</h2>
-                <Button variant="outline" size="sm" className="gap-1">
-                  <i className="fas fa-filter" /> סנן
+      <MobileMenu 
+        isOpen={isMobileMenuOpen} 
+        activeRoute={location} 
+        onClose={() => setIsMobileMenuOpen(false)} 
+      />
+      <div className="flex min-h-screen bg-background">
+        <main className="flex-1 flex flex-col items-center justify-start pt-16 pb-20 md:pb-0">
+          <section className="w-full flex flex-col items-center p-4 md:p-8">
+            <div className="w-full max-w-3xl">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <i className="fas fa-map-marker-alt text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">תל אביב, ישראל</span>
+                </div>
+                <Button onClick={() => navigate("/report")} className="gap-1 bg-red-600 hover:bg-red-700">
+                  <i className="fas fa-plus" /> דווח על גניבה
                 </Button>
               </div>
-              <div className="h-[60vh] rounded-lg overflow-hidden border mb-4">
-                <TheftMap />
+              <div className="relative mb-4">
+                <i className="fas fa-search absolute left-3 top-3 text-muted-foreground" />
+                <Input placeholder="חפש אופניים, קורקינטים או מודעות..." className="pl-9" />
               </div>
-              {/* Recent Reports List Placeholder */}
-              <h3 className="text-sm font-medium mb-2">דיווחים אחרונים בסביבה</h3>
-              <div className="space-y-2">
-                {alerts.slice(0, 5).map((alert) => (
-                  <div key={alert.id} className="p-3 border rounded flex items-center gap-3 bg-white">
-                    <i className="fas fa-exclamation-triangle text-red-500"></i>
-                    <div>
-                      <div className="font-bold">{alert.title || "דיווח גניבה"}</div>
-                      <div className="text-xs text-muted-foreground">{typeof alert.createdAt === 'string' ? alert.createdAt : new Date(alert.createdAt).toLocaleString()}</div>
+              <Tabs defaultValue="map" className="mb-4" onValueChange={setActiveTab}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="map">מפת גניבות</TabsTrigger>
+                  <TabsTrigger value="listings">לוח מודעות</TabsTrigger>
+                </TabsList>
+                <TabsContent value="map" className="mt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-lg font-semibold">דיווחים אחרונים</h2>
+                    <Button variant="outline" size="sm" className="gap-1">
+                      <i className="fas fa-filter" /> סנן
+                    </Button>
+                  </div>
+                  <div className="rounded-lg overflow-hidden border mb-4" style={{ height: 400 }}>
+                    <TheftMap />
+                  </div>
+                  {/* Recent Reports List Placeholder */}
+                  <h3 className="text-sm font-medium mb-2">דיווחים אחרונים בסביבה</h3>
+                  <div className="space-y-2">
+                    {alerts.slice(0, 5).map((alert) => (
+                      <div key={alert.id} className="p-3 border rounded flex items-center gap-3 bg-white">
+                        <i className="fas fa-exclamation-triangle text-red-500"></i>
+                        <div>
+                          <div className="font-bold">{alert.title || "דיווח גניבה"}</div>
+                          <div className="text-xs text-muted-foreground">{typeof alert.createdAt === 'string' ? alert.createdAt : new Date(alert.createdAt).toLocaleString()}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+                <TabsContent value="listings" className="mt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-lg font-semibold">מודעות חדשות</h2>
+                  </div>
+                  <div className="w-full max-w-2xl mx-auto">
+                    <div className="bg-card rounded-lg shadow p-6 border border-border flex flex-col items-center text-center">
+                      <i className="fab fa-facebook text-4xl text-blue-600 mb-4"></i>
+                      <h3 className="text-xl font-bold mb-2">מודעות פייסבוק מרקטפלייס</h3>
+                      <p className="mb-6 text-muted-foreground">
+                        כאן תוכל לצפות במודעות אופניים וקורקינטים למכירה מתוך Facebook Marketplace בישראל. לחיצה על אחד הכפתורים תעביר אותך ישירות לדף הרלוונטי בפייסבוק.
+                      </p>
+                      <div className="flex flex-col md:flex-row gap-4 w-full justify-center">
+                        <a href="https://www.facebook.com/marketplace/105930569439602/bicycles/" target="_blank" rel="noopener noreferrer" className="w-full md:w-auto">
+                          <Button className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white gap-2" size="lg">
+                            <i className="fas fa-bicycle"></i> צפה באופניים למכירה בפייסבוק
+                          </Button>
+                        </a>
+                        <a href="https://www.facebook.com/marketplace/105930569439602/scooters/" target="_blank" rel="noopener noreferrer" className="w-full md:w-auto">
+                          <Button className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white gap-2" size="lg">
+                            <i className="fas fa-motorcycle"></i> צפה בקורקינטים למכירה בפייסבוק
+                          </Button>
+                        </a>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </TabsContent>
-            <TabsContent value="listings" className="mt-2">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-semibold">מודעות חדשות</h2>
-              </div>
-              <div className="w-full max-w-2xl mx-auto">
-                <div className="bg-card rounded-lg shadow p-6 border border-border flex flex-col items-center text-center">
-                  <i className="fab fa-facebook text-4xl text-blue-600 mb-4"></i>
-                  <h3 className="text-xl font-bold mb-2">מודעות פייסבוק מרקטפלייס</h3>
-                  <p className="mb-6 text-muted-foreground">
-                    כאן תוכל לצפות במודעות אופניים וקורקינטים למכירה מתוך Facebook Marketplace בישראל. לחיצה על אחד הכפתורים תעביר אותך ישירות לדף הרלוונטי בפייסבוק.
-                  </p>
-                  <div className="flex flex-col md:flex-row gap-4 w-full justify-center">
-                    <a href="https://www.facebook.com/marketplace/105930569439602/bicycles/" target="_blank" rel="noopener noreferrer" className="w-full md:w-auto">
-                      <Button className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white gap-2" size="lg">
-                        <i className="fas fa-bicycle"></i> צפה באופניים למכירה בפייסבוק
-                      </Button>
-                    </a>
-                    <a href="https://www.facebook.com/marketplace/105930569439602/scooters/" target="_blank" rel="noopener noreferrer" className="w-full md:w-auto">
-                      <Button className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white gap-2" size="lg">
-                        <i className="fas fa-motorcycle"></i> צפה בקורקינטים למכירה בפייסבוק
-                      </Button>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </main>
-      
+                </TabsContent>
+              </Tabs>
+            </div>
+          </section>
+        </main>
+      </div>
       <MobileNavigation activeRoute={location} />
-    </div>
+    </>
   );
 }

@@ -15,7 +15,7 @@ export const NavigationItem: React.FC<NavigationItemProps> = ({
   isActive,
 }) => {
   const baseClasses = "flex items-center p-3 rounded-lg";
-  const activeClasses = "bg-primary bg-opacity-10 text-primary";
+  const activeClasses = "bg-primary text-white";
   const inactiveClasses = "hover:bg-neutral-lighter transition-colors text-muted-foreground";
 
   const className = `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`;

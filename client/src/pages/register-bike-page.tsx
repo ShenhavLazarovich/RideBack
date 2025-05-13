@@ -129,13 +129,11 @@ export default function RegisterBikePage() {
         activeRoute={location} 
         onClose={() => setIsMobileMenuOpen(false)} 
       />
-      
-      <main className="pt-16 md:pt-0 md:pr-64 min-h-screen pb-20 md:pb-0">
-        <section className="p-4 md:p-8">
-          <div className="w-full">
-            <h2 className="text-2xl font-bold mb-6">רישום אופניים חדשים</h2>
-            
-            <div className="bg-card rounded-lg shadow p-6 md:p-8 border border-border">
+      <div className="flex min-h-screen bg-background">
+        <main className="flex-1 flex flex-col items-center justify-start pt-16 pb-20 md:pb-0">
+          <section className="w-full flex flex-col items-center p-4 md:p-8">
+            <h2 className="text-2xl font-bold mb-6 w-full max-w-3xl text-center md:text-right">רישום אופניים חדשים</h2>
+            <div className="bg-card rounded-lg shadow p-6 md:p-8 border border-border w-full max-w-3xl">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <h3 className="text-lg font-bold mb-4">פרטי האופניים</h3>
@@ -331,9 +329,9 @@ export default function RegisterBikePage() {
                 </form>
               </Form>
             </div>
-          </div>
-        </section>
-      </main>
+          </section>
+        </main>
+      </div>
       
       <MobileNavigation activeRoute={location} />
     </>

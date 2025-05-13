@@ -261,13 +261,22 @@ export default function ReportTheftPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <>
+      <MobileHeader 
+        title="דיווח על גניבת אופניים/קורקינט"
+        toggleMobileMenu={() => setIsMobileMenuOpen(true)} 
+      />
       <DesktopSidebar activeRoute={location} />
-      <main className="pt-16 md:pt-0 md:pr-64 min-h-screen pb-20 md:pb-0">
-        <section className="p-4 md:p-8">
-          <div className="max-w-xl mx-auto">
-            <h1 className="text-2xl font-bold mb-6">דיווח על גניבת אופניים/קורקינט</h1>
-            <div className="bg-card rounded-lg shadow p-6 border border-border">
+      <MobileMenu 
+        isOpen={isMobileMenuOpen} 
+        activeRoute={location} 
+        onClose={() => setIsMobileMenuOpen(false)} 
+      />
+      <div className="flex min-h-screen bg-background">
+        <main className="flex-1 flex flex-col items-center justify-start pt-16 pb-20 md:pb-0">
+          <section className="w-full flex flex-col items-center p-4 md:p-8">
+            <h1 className="text-2xl font-bold mb-6 w-full max-w-3xl text-center md:text-right">דיווח על גניבת אופניים/קורקינט</h1>
+            <div className="bg-card rounded-lg shadow p-6 md:p-8 border border-border w-full max-w-3xl">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   {/* Bike selection */}
@@ -381,9 +390,10 @@ export default function ReportTheftPage() {
                 </form>
               </Form>
             </div>
-          </div>
-        </section>
-      </main>
-    </div>
+          </section>
+        </main>
+      </div>
+      <MobileNavigation activeRoute={location} />
+    </>
   );
 }

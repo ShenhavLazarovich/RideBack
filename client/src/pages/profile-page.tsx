@@ -163,147 +163,138 @@ export default function ProfilePage() {
         activeRoute={location} 
         onClose={() => setIsMobileMenuOpen(false)} 
       />
-      
-      <main className="pt-16 md:pt-0 md:pr-64 min-h-screen pb-20 md:pb-0">
-        <section className="p-4 md:p-8">
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-2xl font-bold mb-6">הפרופיל שלי</h2>
-            
-            {loadingProfile ? (
-              <div className="text-center py-8">
-                <i className="fas fa-spinner fa-spin text-primary text-2xl"></i>
-                <p className="mt-2 text-muted-foreground">טוען פרטי פרופיל...</p>
-              </div>
-            ) : (
-              <div className="space-y-8">
-                {/* Profile Summary Card */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle>פרטי משתמש</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white text-2xl">
-                        <span>{user?.username?.substring(0, 2) || "מש"}</span>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-medium">{user?.username}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {profileData?.email && `${profileData.email} · `}
-                          חבר מתאריך {new Date(user?.createdAt || Date.now()).toLocaleDateString('he-IL')}
-                        </p>
-                      </div>
+      <div className="flex min-h-screen bg-background">
+        <main className="flex-1 flex flex-col items-center justify-start pt-16 pb-20 md:pb-0">
+          <section className="w-full flex flex-col items-center p-4 md:p-8">
+            <h2 className="text-2xl font-bold mb-6 w-full max-w-3xl text-center md:text-right">הפרופיל שלי</h2>
+            <div className="w-full max-w-3xl space-y-8">
+              {/* Profile Summary Card */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle>פרטי משתמש</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white text-2xl">
+                      <span>{user?.username?.substring(0, 2) || "מש"}</span>
                     </div>
-                    
-                    <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">סך הכל אופניים רשומים:</span>
-                        <span className="font-medium"> {profileData?.bikesCount || 0}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">דיווחי גניבה פעילים:</span>
-                        <span className="font-medium"> {profileData?.activeTheftReportsCount || 0}</span>
-                      </div>
+                    <div>
+                      <h3 className="text-lg font-medium">{user?.username}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {profileData?.email && `${profileData.email} · `}
+                        חבר מתאריך {new Date(user?.createdAt || Date.now()).toLocaleDateString('he-IL')}
+                      </p>
                     </div>
-                  </CardContent>
-                </Card>
-                
-                {/* Profile Edit Form */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle>עריכת פרטי פרופיל</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Form {...profileForm}>
-                      <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <FormField control={profileForm.control} name="username" render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>שם משתמש</FormLabel>
-                              <FormControl><Input {...field} /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
-                          <FormField control={profileForm.control} name="email" render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>אימייל</FormLabel>
-                              <FormControl><Input {...field} /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
-                          <FormField control={profileForm.control} name="phone" render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>טלפון</FormLabel>
-                              <FormControl><Input {...field} /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
-                          <FormField control={profileForm.control} name="firstName" render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>שם פרטי</FormLabel>
-                              <FormControl><Input {...field} /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
-                          <FormField control={profileForm.control} name="lastName" render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>שם משפחה</FormLabel>
-                              <FormControl><Input {...field} /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
-                        </div>
-                        <div className="flex justify-end">
-                          <Button type="submit" className="bg-primary">עדכן פרופיל</Button>
-                        </div>
-                      </form>
-                    </Form>
-                  </CardContent>
-                </Card>
-                
-                {/* Password Change Form */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle>שינוי סיסמה</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Form {...passwordForm}>
-                      <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <FormField control={passwordForm.control} name="currentPassword" render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>סיסמה נוכחית</FormLabel>
-                              <FormControl><Input type="password" {...field} /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
-                          <FormField control={passwordForm.control} name="newPassword" render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>סיסמה חדשה</FormLabel>
-                              <FormControl><Input type="password" {...field} /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
-                          <FormField control={passwordForm.control} name="confirmNewPassword" render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>אישור סיסמה חדשה</FormLabel>
-                              <FormControl><Input type="password" {...field} /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
-                        </div>
-                        <div className="flex justify-end">
-                          <Button type="submit" className="bg-primary">שנה סיסמה</Button>
-                        </div>
-                      </form>
-                    </Form>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-          </div>
-        </section>
-      </main>
+                  </div>
+                  
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">סך הכל אופניים רשומים:</span>
+                      <span className="font-medium"> {profileData?.bikesCount || 0}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">דיווחי גניבה פעילים:</span>
+                      <span className="font-medium"> {profileData?.activeTheftReportsCount || 0}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Profile Edit Form */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle>עריכת פרטי פרופיל</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Form {...profileForm}>
+                    <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={profileForm.control} name="username" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>שם משתמש</FormLabel>
+                            <FormControl><Input {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={profileForm.control} name="email" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>אימייל</FormLabel>
+                            <FormControl><Input {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={profileForm.control} name="phone" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>טלפון</FormLabel>
+                            <FormControl><Input {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={profileForm.control} name="firstName" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>שם פרטי</FormLabel>
+                            <FormControl><Input {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={profileForm.control} name="lastName" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>שם משפחה</FormLabel>
+                            <FormControl><Input {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                      <div className="flex justify-end">
+                        <Button type="submit" className="bg-primary">עדכן פרופיל</Button>
+                      </div>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+              
+              {/* Password Change Form */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle>שינוי סיסמה</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Form {...passwordForm}>
+                    <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <FormField control={passwordForm.control} name="currentPassword" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>סיסמה נוכחית</FormLabel>
+                            <FormControl><Input type="password" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={passwordForm.control} name="newPassword" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>סיסמה חדשה</FormLabel>
+                            <FormControl><Input type="password" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={passwordForm.control} name="confirmNewPassword" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>אישור סיסמה חדשה</FormLabel>
+                            <FormControl><Input type="password" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                      <div className="flex justify-end">
+                        <Button type="submit" className="bg-primary">שנה סיסמה</Button>
+                      </div>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+        </main>
+      </div>
       
       <MobileNavigation activeRoute={location} />
     </>

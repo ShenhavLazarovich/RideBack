@@ -229,12 +229,10 @@ export function TheftMap() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div 
-        ref={mapContainer} 
-        className="w-full h-[400px] rounded-lg" 
-        style={{ minHeight: '400px' }}
-      />
-    </div>
+    <div 
+      ref={mapContainer} 
+      className="w-full h-[400px] rounded-lg" 
+      style={{ minHeight: '400px', height: '400px' }}
+    />
   );
 }
